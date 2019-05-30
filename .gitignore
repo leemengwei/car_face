@@ -6,6 +6,7 @@
 *.txt
 *.pt
 *.pth
+*.log
 
 *.o
 *.pyc
