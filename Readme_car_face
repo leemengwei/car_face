@@ -1,0 +1,10 @@
+
+#散乱图片：
+python seat_merge.py
+
+#串行逐车（每辆车一个文件夹，左右各三幅图），复现结果，可以画图：
+python car_to_car_merge.py
+
+#并行逐车， 注意不可画图！！复现结果：
+python threads_start.py
+
