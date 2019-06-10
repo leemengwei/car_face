@@ -136,7 +136,7 @@ if __name__ == "__main__":
     #初始化：
     workers = workers_cluster() 
     #input("Enter to start")
-    filelist = glob.glob("./left/*")
+    filelist = glob.glob(config.CAR_TO_CAR_DIR+"/*/*.png")
     image_idx = 0
     while True:
         try:

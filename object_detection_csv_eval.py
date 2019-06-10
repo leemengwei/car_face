@@ -171,7 +171,7 @@ def evaluate(
 
     all_detections     = _get_detections(generator, retinanet, score_threshold=score_threshold, max_detections=max_detections, save_path=save_path)
     all_annotations    = _get_annotations(generator)
-
+    counters = {}
     average_precisions = {}
     f1_scores = {}
     recalling = {}
@@ -210,7 +210,8 @@ def evaluate(
 
         # no annotations -> AP for this class is 0 (is this correct?)
         if num_annotations == 0:
-            average_precisions[generator.label_to_name(label)] = 0, 0
+            counters[generator.label_to_name(label)] = 0
+            average_precisions[generator.label_to_name(label)] = 0
             f1_scores[generator.label_to_name(label)] = 0
             recalling[generator.label_to_name(label)] = 0
             precising[generator.label_to_name(label)] = 0
@@ -247,15 +248,17 @@ def evaluate(
 
         # compute average precision 这里原作者是根据precision和recall曲线的area来计算area的，和我使用conf点做出来的一样。
         average_precision  = _compute_ap_area(recall, precision)
-        average_precisions[generator.label_to_name(label)] = np.round(average_precision,3), num_annotations
-   
+        average_precisions[generator.label_to_name(label)] = np.round(average_precision,3)
+        counters[generator.label_to_name(label)] = num_annotations  
     #print('\nmAP:')
     #for label in range(generator.num_classes()):
     #    label_name = generator.label_to_name(label)
     #    print('{}: {}'.format(label_name, average_precisions[label][0]))
 
     #我自己的recalling和他用area算得一样，这里借用原作者的，只为顺便显示一下“多少个”。
+    print("Counters:", counters)
     print("Precising:", precising, "\nRecalling:", average_precisions, "\nF1_at_this_conf:", f1_scores, np.array(list(f1_scores.values())).sum())
+
     return f1_scores
 
 

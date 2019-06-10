@@ -44,7 +44,7 @@ if __name__ == "__main__":
     number_score_by_vote = 0
     number_score_by_union = 0
     all_num = 0
-    for idx, car in enumerate(cars[:]):
+    for idx, car in enumerate(cars[::]):
         print(idx, "of", len(cars), car)
         images_both_side = glob.glob(car+"/*.png")
         images_both_side.sort()

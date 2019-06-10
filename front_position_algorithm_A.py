@@ -30,6 +30,15 @@ warnings.filterwarnings("ignore")
 from config import *
 import seaborn as sns
 
+import mmcv
+from mmcv.runner import load_checkpoint, get_dist_info
+from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmdet.datasets import build_dataloader, get_dataset
+from mmdet.models import build_detector
+import mmdetection.tools.test_fix as test_fix
+from mmdet.apis import init_detector
+
+
 class A(camera):
     def __init__(self, root_dir):
         super(A, self).__init__()
@@ -40,13 +49,15 @@ class A(camera):
         self.side = "left"
         #super().__init__(self.camera_number)
         #Init model:
-        self.objs_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))
+        #self.objs_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))
         self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
         #load model structure
-        self.net_to_detect_objs = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)
+        #self.net_to_detect_objs = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)
         self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=config.NUM_OF_SEATS_PEER_CAR)
         #load model params
-        self.net_to_detect_objs.load_state_dict(self.objs_net_checkpoint_dict['model_state_dict'])
+        #use mmd now:
+        #self.net_to_detect_objs.load_state_dict(self.objs_net_checkpoint_dict['model_state_dict'])
+        self.net_to_detect_objs= self.get_mmd_model_and_template()
         self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
         #switch mode
         self.net_to_detect_objs.cuda().eval()
@@ -55,9 +66,29 @@ class A(camera):
         self.seq_ground_signal = collections.deque(maxlen=200)
         self.seq_threshold_signal = collections.deque(maxlen=200)
         print("Program %s-Initialized."%self.netname)
+    def get_mmd_model_and_template(self):
+        cfg = mmcv.Config.fromfile(MMD_CONFIG)
+        # set cudnn_benchmark
+        if cfg.get('cudnn_benchmark', False):
+            torch.backends.cudnn.benchmark = True
+        cfg.model.pretrained = None
+        cfg.data.test.test_mode = True
+        model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+        checkpoint = load_checkpoint(model, MMD_WEIGHTS, map_location='cpu')
+        # old versions did not save class info in checkpoints, this walkaround is
+        # for backward compatibility
+        if 'CLASSES' in checkpoint['meta']:
+            model.CLASSES = checkpoint['meta']['CLASSES']
+        else:
+            model.CLASSES = ("angle","angle_r","top","top_r","head")
+        model = MMDataParallel(model, device_ids=[0])
+        model = init_detector(MMD_CONFIG, MMD_WEIGHTS)
+        return model
+
     def get_objs_position(self, net_cam_frame):
         with no_grad():
-            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = visualize.frame_detection(self.net_to_detect_objs, net_cam_frame, confidence=CONFIDENCE_THRESHOLD)
+            #objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = visualize.frame_detection(self.net_to_detect_objs, net_cam_frame, confidence=CONFIDENCE_THRESHOLD)
+            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, show=False)
             classes = config.CLASSES
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
@@ -266,7 +297,8 @@ class A(camera):
             print("Waiting for ground signal...")
         else:
             #Preprocess cam data:
-            net_cam_frame = self.preprocess_cam_frame(cam_frame)
+            #net_cam_frame = self.preprocess_cam_frame(cam_frame)
+            net_cam_frame = cam_frame*255
             start_time = time.time()
             #检测标识物和人头:
             refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, \

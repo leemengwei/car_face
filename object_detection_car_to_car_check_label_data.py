@@ -24,8 +24,6 @@ def check_label_names(side, jsons_side):
         right_angle_name = "angle" if side =="left" else "angle_r"
         wrong_top_name = "top_r" if side =="left" else "top"
         right_top_name = "top" if side =="left" else "top_r"
-        wrong_head_name = "head4" if side =="left" else "head3"
-        right_head_name = "head5"
         #重复标签警告：
         if len(list(set(labels_this_json))) != len(labels_this_json):
             print("Duplicate labels in %s"%json_side)
@@ -40,28 +38,31 @@ def check_label_names(side, jsons_side):
             pass
         #标签侧名称*错误*:
         if len(set(side_target_labels+labels_this_json)) != len(side_target_labels):
-            print("***Error! Wrong labels appeared in %s"%json_side, side)
+            print("***Error! Wrong labels appeared in %s"%json_side.strip(".json"), side)
+            print(set(side_target_labels+labels_this_json), "vs", set(side_target_labels))
             os.popen("sed -i 's/\"{wrong_angle_name}\"/\"{right_angle_name}\"/g' {json_name}".format(json_name=json_side.replace(" ","\ "), wrong_angle_name=wrong_angle_name, right_angle_name=right_angle_name, overwrite=json_side.replace(" ","\ ")))
             os.popen("sed -i 's/\"{wrong_top_name}\"/\"{right_top_name}\"/g' {json_name}".format(json_name=json_side.replace(" ","\ "), wrong_top_name=wrong_top_name, right_top_name=right_top_name, overwrite=json_side.replace(" ","\ ")))
-            os.popen("sed -i 's/\"{wrong_head_name}\"/\"{right_head_name}\"/g' {json_name}".format(json_name=json_side.replace(" ","\ "), wrong_head_name=wrong_head_name, right_head_name=right_head_name, overwrite=json_side.replace(" ","\ ")))
             pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "Double side...")
+    parser.add_argument('-CD', '--check_directory', required=True)
     args = parser.parse_args()
 
     #car_to_car_dir = "/home/user/Data/good/"
-    car_to_car_dir = "/home/user/storage/data/car_head/20190429/"
+    car_to_car_dir = args.check_directory
     cars = glob.glob(car_to_car_dir+"/*")
     cars.sort()
-    left_target_labels = ['top', 'angle', 'head1', 'head2', 'head3', 'head5']  #左边不可能看到4 
-    right_target_labels = ['top_r', 'angle_r', 'head1', 'head2', 'head4', 'head5']  #右边不可能看到3
+    left_target_labels = ['top', 'angle', 'head1', 'head2', 'head3', 'head4', 'head5', 'head6']  
+    right_target_labels = ['top_r', 'angle_r', 'head1', 'head2', 'head3', 'head4', 'head5', 'head6']  
     image_format = "png"
     for idx, car in enumerate(cars[:]):
         #Images:
         images_both_side = glob.glob(car+"/*.%s"%image_format)
         images_both_side.sort()
-        assert len(images_both_side)==6, "Check dir:%s"%car
+        if len(images_both_side)!=6:
+            print("Rule of side may be wrong, skip...")
+            continue
         #Jsons:
         jsons_both_side = glob.glob(car+"/*.json")
         jsons_both_side = 'UQ'.join(images_both_side).replace('.%s'%image_format, '.json').split('UQ')

@@ -112,7 +112,9 @@ def main(args=None):
     root_dir = "/".join(os.getcwd().split('/'))
     retinanet = model.resnet152(num_classes=dataset_train.num_classes(), pretrained=True, root_dir=root_dir)
     retinanet = retinanet.cuda()
-    optimizer = optim.Adam(retinanet.parameters(), lr=args.learning_rate, weight_decay=1e-5)
+    #optimizer = optim.Adam(retinanet.parameters(), lr=args.learning_rate, weight_decay=1e-5)
+    optimizer = optim.RMSprop(retinanet.parameters(), lr=args.learning_rate, weight_decay=1e-5)
+    #optimizer = optim.SGD(retinanet.parameters(), lr=args.learning_rate, momentum=0.9, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=15, verbose=True)
     if args.parallel_mode:
         retinanet = torch.nn.DataParallel(retinanet)
@@ -175,9 +177,17 @@ def main(args=None):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(retinanet.parameters(), 0.1)
             if args.parallel_mode:
-                optimizer.module.step()
+                try:
+                    optimizer.module.step()
+                except:
+                    #print("warning, optimizer is not stepping forward")
+                    pass
             else:
-                optimizer.step()
+                try:
+                    optimizer.step()
+                except:
+                    #print("warning, optimizer is not stepping forward")
+                    pass
             iter_losses.append(float(loss))
             pbar_train.set_description('T-Ep:{}|Iter:{}|C:{:1.2f}|R:{:1.2f}|L:{:1.2f}|M:{:1.2f}'.format(epoch, iter_num, float(classification_loss), float(regression_loss), float(loss), np.mean(iter_losses)))
         if args.parallel_mode:

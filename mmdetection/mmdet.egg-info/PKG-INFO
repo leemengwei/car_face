@@ -1,0 +1,51 @@
+Metadata-Version: 1.1
+Name: mmdet
+Version: 0.6.0+3a320fe
+Summary: Open MMLab Detection Toolbox
+Home-page: https://github.com/open-mmlab/mmdetection
+Author: UNKNOWN
+Author-email: UNKNOWN
+License: Apache License 2.0
+Description: ## 学习使我快乐目标检测
+        
+        ### 1. 更新日志
+        
+        
+        (2019.05.14):
+        
+        - 添加senet154
+        
+        (2019.05.13):
+        
+        - 添加多尺度预测
+        
+        ### 2. TODO
+        
+        - [x] 添加多尺度预测
+        - [ ] 添加分类和回归权重到配置文件中
+        - [ ] 添加resnet152配置文件并测试通过
+        - [x] 添加senet154配置文件并测试通过
+        - [ ] 添加fp16并测试通过
+        - [ ] 其他未知操作
+        
+        
+        ### 3. 成员
+        
+        - 郑烨
+        - 梁爽
+        - 朱超杰
+        - 杨胜
+        - 张元梵
+        
+        
+Keywords: computer vision,object detection
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6

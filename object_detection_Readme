@@ -7,7 +7,7 @@ python object_detection_train.py -DP=object_detection_data_both_side_finetunes -
 
 验证：
 CUDA_VISIBLE_DEVICES=0 python object_detection_evaluate.py -DP=object_detection_data_both_side_all_for_deploy -TF=train.csv -RM=./object_detection_logs_data_both_side_double_day/csv_retinanet_best.pt -VF=val.csv 
-CUDA_VISIBLE_DEVICES=0 python object_detection_evaluate.py -DP=object_detection_data_both_side_finetunes -TF=lee_train.csv -RM=./object_detection_logs_data_both_side_double_day/csv_retinanet_best.pt -VF=rao_test.csv 
+CUDA_VISIBLE_DEVICES=0 python object_detection_evaluate.py -DP=object_detection_data_both_side_finetunes -TF=train.csv -RM=./object_detection_logs_data_both_side_finetunes/csv_retinanet_best.pt -VF=val.csv 
 
 部署(前向，不标签)：
 CUDA_VISIBLE_DEVICES=1 python object_detection_visualize.py -DP=object_detection_data_both_side_double_day -RM=object_detection_logs_data_both_side_double_day/csv_retinanet_best.pt -VF=val.csv
