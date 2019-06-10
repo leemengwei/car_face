@@ -73,15 +73,6 @@ class A(camera):
             torch.backends.cudnn.benchmark = True
         cfg.model.pretrained = None
         cfg.data.test.test_mode = True
-        model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-        checkpoint = load_checkpoint(model, MMD_WEIGHTS, map_location='cpu')
-        # old versions did not save class info in checkpoints, this walkaround is
-        # for backward compatibility
-        if 'CLASSES' in checkpoint['meta']:
-            model.CLASSES = checkpoint['meta']['CLASSES']
-        else:
-            model.CLASSES = ("angle","angle_r","top","top_r","head")
-        model = MMDataParallel(model, device_ids=[0])
         model = init_detector(MMD_CONFIG, MMD_WEIGHTS)
         return model
 

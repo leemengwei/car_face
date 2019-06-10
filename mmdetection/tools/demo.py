@@ -34,7 +34,6 @@ def predict():
     #_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
     for image in tqdm(glob("/mfs/home/wangke/data/car_face/coco/images/val2017/*.png")):
         img = mmcv.imread(image)
-        embed()
         filename = image.split("/")[-1]
         start = time.time()
         result = inference_detector(model, img)
