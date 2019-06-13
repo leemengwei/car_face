@@ -32,7 +32,7 @@ def predict():
     #model = build_detector(cfg.model, test_cfg=cfg.test_cfg)
     model = init_detector(args.cfg, args.weights, device='cuda:0')
     #_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
-    for image in tqdm(glob("/mfs/home/wangke/data/car_face/coco/images/val2017/*.png")):
+    for image in tqdm(glob("/home/user/list/*/*.png")):
         img = mmcv.imread(image)
         filename = image.split("/")[-1]
         start = time.time()
@@ -55,8 +55,8 @@ def predict():
             cv2.putText(img,text,(int(x1),int(y1-2)),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,255,255))
             cv2.rectangle(img,(int(bbox[0]),int(bbox[1])),(int(bbox[2]),int(bbox[3])),(0,0,255),2)
         status = cv2.imwrite("outputs/%s"%filename,img)
-        #cv2.imshow("img",img)
-        #cv2.waitKey(0)
+        cv2.imshow("img",img)
+        cv2.waitKey(0)
         
 if __name__ == "__main__":
     predict()

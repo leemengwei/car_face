@@ -5,6 +5,7 @@ class A():
     pass
 
 '''
+import copy
 import numpy as np
 #import argparse
 from IPython import embed
@@ -49,17 +50,18 @@ class A(camera):
         self.side = "left"
         #super().__init__(self.camera_number)
         #Init model:
-        #self.objs_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))
+        self.angles_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))
         self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
         #load model structure
-        #self.net_to_detect_objs = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)
+        self.net_to_detect_angles = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)
         self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=config.NUM_OF_SEATS_PEER_CAR)
         #load model params
         #use mmd now:
-        #self.net_to_detect_objs.load_state_dict(self.objs_net_checkpoint_dict['model_state_dict'])
+        self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])
         self.net_to_detect_objs= self.get_mmd_model_and_template()
         self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
         #switch mode
+        self.net_to_detect_angles.cuda().eval()
         self.net_to_detect_objs.cuda().eval()
         self.net_spatial.cuda().eval()
         #Init internal parameters:
@@ -76,10 +78,30 @@ class A(camera):
         model = init_detector(MMD_CONFIG, MMD_WEIGHTS)
         return model
 
-    def get_objs_position(self, net_cam_frame):
+    def get_objs_position(self, angle_cam_frame, net_cam_frame):
         with no_grad():
-            #objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = visualize.frame_detection(self.net_to_detect_objs, net_cam_frame, confidence=CONFIDENCE_THRESHOLD)
+            #Compensation
+            #angles_x1s, angles_y1s, angles_x2s, angles_y2s, angles_scores, angles_indexes, angles_elapsed_time = visualize.frame_detection(self.net_to_detect_angles, angle_cam_frame, confidence=0.8)
+            ##Don't use this head
+            #angles_x1s = angles_x1s[np.where(angles_indexes!=4)]
+            #angles_y1s = angles_y1s[np.where(angles_indexes!=4)]
+            #angles_x2s = angles_x2s[np.where(angles_indexes!=4)]
+            #angles_y2s = angles_y2s[np.where(angles_indexes!=4)]
+            #angles_scores = angles_scores[np.where(angles_indexes!=4)]
+            #angles_indexes = angles_indexes[np.where(angles_indexes!=4)]
             objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, show=False)
+            #But use its refs
+            try:
+                objs_x1s = np.append(objs_x1s, angles_x1s)
+                objs_y1s = np.append(objs_y1s, angles_y1s)
+                objs_x2s = np.append(objs_x2s, angles_x2s)
+                objs_y2s = np.append(objs_y2s, angles_y2s)
+                objs_scores = np.append(objs_scores, angles_scores)
+                objs_indexes = np.append(objs_indexes, angles_indexes).astype(int)
+            except:
+                print("COMPENSATING ERROR")
+                pass
+            print("This:", "index",objs_indexes, "score",objs_scores)
             classes = config.CLASSES
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
@@ -117,7 +139,6 @@ class A(camera):
     def check_refs_outputs(self, refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names):
         frame_status = "ok"
         #这里考虑单侧的相机，无论是否看到了另一侧的angle或top，都不管，只处理本侧的angle和top
-        print("self side is ", self.side)
         angle_name = "angle" if self.side is "left" else "angle_r"
         top_name = "top" if self.side is "left" else "top_r"
         angles_x1s = refs_x1s[np.where(refs_label_names==angle_name)]
@@ -280,39 +301,40 @@ class A(camera):
             pass
         return positions_peer_car
     def self_logic(self, image_data):
+        if image_data.dtype == np.uint8:   #If come from C
+            print("Must be C running...")
+            image_data = image_data.astype(float)/255
         global_signal = 1
+        #print(image_data.min(), image_data.mean(), image_data.max())
         cam_frame = image_data
         #判定当前全局信号，GPU是否开始检测
-        if global_signal is 0:
-            refs_x1s = []
-            print("Waiting for ground signal...")
+        #Preprocess cam data:
+        angle_cam_frame = self.preprocess_cam_frame(cam_frame)
+        net_cam_frame = image_data*255
+        #print(image_data.min(), image_data.mean(), image_data.max())
+        start_time = time.time()
+        #检测标识物和人头:
+        refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, \
+            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names \
+                =  self.get_objs_position(angle_cam_frame, net_cam_frame)
+        #对标识物的经验审查与修补：
+        angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
+        if frame_status == "ok":
+            #对人头的经验审查与修补：
+            heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)
+            #位置判别网络：
+            positions_peer_car, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
+            #注意：暂时忽略5位置！！！！！！！！！！！！！！！！！！！！！！！
+            #positions_peer_car = self.ignore_5(positions_peer_car)
+            time_used = time.time() - start_time
         else:
-            #Preprocess cam data:
-            #net_cam_frame = self.preprocess_cam_frame(cam_frame)
-            net_cam_frame = cam_frame*255
-            start_time = time.time()
-            #检测标识物和人头:
-            refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, \
-                heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names \
-                    =  self.get_objs_position(net_cam_frame)
-            #对标识物的经验审查与修补：
-            angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
-            if frame_status == "ok":
-                #对人头的经验审查与修补：
-                heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)
-                #位置判别网络：
-                positions_peer_car, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
-                #注意：暂时忽略5位置！！！！！！！！！！！！！！！！！！！！！！！
-                #positions_peer_car = self.ignore_5(positions_peer_car)
-                time_used = time.time() - start_time
-            else:
-                status = "Frame Skipped since (%s)"%frame_status
-                positions_peer_car = [0,]
-                time_used = time.time() - start_time
-            print("Net:", self.netname, "Time_used:", np.round(time_used, 4), "Judge_stauts:", status, "Positions_peer_frame_peer_side:", positions_peer_car)
-            #并且启动旁侧程序：
-            #pass, 两侧可能等价，同时启动。
-            #Record current status:
+            status = "Frame Skipped since (%s)"%frame_status
+            positions_peer_car = [0,]
+            time_used = time.time() - start_time
+        print("Net:", self.netname, "Time_used:", np.round(time_used, 4), "Judge_stauts:", status, "Positions_peer_frame_peer_side:************", positions_peer_car, "********")
+        #并且启动旁侧程序：
+        #pass, 两侧可能等价，同时启动。
+        #Record current status:
         self.seq_ground_signal.append(global_signal)
         self.seq_threshold_signal.append(0.5)
         #VISUALIZATION:

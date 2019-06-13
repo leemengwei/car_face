@@ -45,6 +45,9 @@ def frame_detection(net, data, confidence):
         y2s = np.hstack((y2s, y2))
         scores = np.hstack((scores, score.cpu().numpy()[idxs[0][j]]))
         label_names.append(label_name)
+    names = ["angle", "angle_r", "top", "top_r", "head"]
+    print("\nDetails<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<:",)
+    print(label_names, scores)
     label_names = np.array(label_names)
     return x1s,y1s,x2s,y2s, scores,label_names, time.time()-st
 

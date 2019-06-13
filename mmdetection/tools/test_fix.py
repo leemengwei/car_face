@@ -17,7 +17,10 @@ from mmdet.datasets import build_dataloader, get_dataset
 from mmdet.models import build_detector
 from mmdet.apis import inference_detector, show_result,init_detector
 
+import sys
 from IPython import embed
+sys.path.append("i/home/user/PersonDetection99/car_face/")
+from config import *
 def single_gpu_frame_detection(model, _data, show=False):
     model.eval()
     start = time.time()
@@ -36,7 +39,7 @@ def single_gpu_frame_detection(model, _data, show=False):
     label_names = []
     for label,bbox in zip(labels,bboxes):
         threshold = bbox[-1]
-        if threshold < 0.8:
+        if threshold < CONFIDENCE_THRESHOLD:
             continue
         x1,y1 = bbox[0],bbox[1]
         x2,y2 = bbox[2],bbox[1]
@@ -48,6 +51,9 @@ def single_gpu_frame_detection(model, _data, show=False):
         y2s = np.hstack((y2s, y3))
         scores = np.hstack((scores, threshold))
         label_names.append(label)
+    names = ["angle", "angle_r", "top", "top_r", "head"]
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Details:")
+    print(label_names, scores)
     return x1s,y1s,x2s,y2s, scores,label_names, elapsed_time
 
 def single_gpu_test(model, data_loader, show=False):

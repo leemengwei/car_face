@@ -27,8 +27,7 @@ class camera(object):
             pass
         cam_frame = skimage.io.imread(filename)
         positions_peer_car = [0,]
-        if len(cam_frame.shape) == 2:
-            cam_frame = skimage.color.gray2rgb(cam_frame).astype(np.float32)/255.0
+        cam_frame = skimage.color.gray2rgb(cam_frame).astype(np.float32)/255.0
         return cam_frame
        
         

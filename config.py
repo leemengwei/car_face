@@ -20,11 +20,11 @@ UNVEIL               = False
 UNVEIL               = True
 #OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_all_for_deploy/csv_retinanet_best.pt"    #微调前
 #OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_last.pt"    #微调后
-#OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_full_data_465.pt"    #微调后
+OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_full_data_465.pt"    #微调后
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_all_for_deploy/model_best.pt"   #微调前
 SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_finetunes/model_best.pt"   #微调后
 MMD_CONFIG = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e.py"
-MMD_WEIGHTS = "mmdetection/trained_models/car_face/latest.pth"
+MMD_WEIGHTS = "mmdetection/trained_models/car_face/hrnet_latest.pth"
 
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程有bug！只会调用左侧的 测试的话 请注意！
@@ -37,4 +37,4 @@ if PARALLEL_MODE:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/mfs/home/limengwei/car_face/car_face/object_detection_data_both_side_finetunes/test/"
+CAR_TO_CAR_DIR = "/home/user/list/"
