@@ -2,7 +2,7 @@ import mmcv
 import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-
+import sys
 from .recall import eval_recalls
 
 
@@ -36,7 +36,9 @@ def coco_eval(result_file, result_types, coco, max_dets=(100, 300, 1000)):
         cocoEval.evaluate()
         cocoEval.accumulate()
         cocoEval.summarize()
-
+        f1score = 2*cocoEval.stats[0]*cocoEval.stats[8]/(cocoEval.stats[0]+cocoEval.stats[8])
+        print("F1score:", f1score)
+        sys.stdout.flush()
 
 def fast_eval_recall(results,
                      coco,

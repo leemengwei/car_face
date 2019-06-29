@@ -139,8 +139,9 @@ class A(camera):
     def check_refs_outputs(self, refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names):
         frame_status = "ok"
         #这里考虑单侧的相机，无论是否看到了另一侧的angle或top，都不管，只处理本侧的angle和top
-        angle_name = "angle" if self.side is "left" else "angle_r"
-        top_name = "top" if self.side is "left" else "top_r"
+        #统一到单侧
+        angle_name = "angle"
+        top_name = "top"
         angles_x1s = refs_x1s[np.where(refs_label_names==angle_name)]
         angles_y1s = refs_y1s[np.where(refs_label_names==angle_name)]
         angles_x2s = refs_x2s[np.where(refs_label_names==angle_name)] 
@@ -253,14 +254,13 @@ class A(camera):
     def get_spatial_in_seat_position(self, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s):
         if len(heads_x1s)==0:   #如果：没人头
             if len(angle_x1)!=0 or len(top_x1)!=0:   #但出现了标识物
-                status = "Empirical, %s head, %s refs, case 1."%(len(heads_x1s), len(angle_x1)+len(top_x1))
+                status = "Empirical, %s head, %s refs, case 1.[1,]"%(len(heads_x1s), len(angle_x1)+len(top_x1))
                 return [1,], status    #肯定有车，所以肯定有司机
             else:    #连标识物都没有
-                status = "Empirical, %s head, %s refs, case 2."%(len(heads_x1s), len(angle_x1)+len(top_x1))
+                status = "Empirical, %s head, %s refs, case 2.[0,]"%(len(heads_x1s), len(angle_x1)+len(top_x1))
                 return [0,], status    #那就算了,什么都没有
         else:                   #如果:有人头
             if len(angle_x1)==1 and len(top_x1)==1:  #并且刚好标识物各有一个,运行神经网络
-                status = "Predicted, %s head, %s refs, case 3."%(len(heads_x1s), len(angle_x1)+len(top_x1))
                 #生成输入矩阵 n×12维度， n是人头个数
                 inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
                 positions_peer_car = {}
@@ -285,11 +285,14 @@ class A(camera):
                         positions_peer_car[position] = position_probabilities   #只有当position不再出现过，才可以赋值进去
                 #Add in driver.
                 positions_peer_car[1]="666" if 1 not in positions_peer_car.keys() else positions_peer_car[1]
-                return list(positions_peer_car.keys()), status
+                _result_ = list(positions_peer_car.keys())
+                status = "Predicted, %s head, %s refs, case 3. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
+                return _result_, status
             elif len(angle_x1)==0 and len(top_x1)==0:   #没有任何标识物
-                status = "Empirical, %s head, %s refs, case 4."%(len(heads_x1s), len(angle_x1)+len(top_x1))
-                possible_seat = [1,2,3,5,4]  #将从经验位置顺序里直接取
-                return possible_seat[:len(heads_x1s)], status 
+                possible_seat = [1,2,3,4,5]  #将从经验位置顺序里直接取
+                _result_ = possible_seat[:len(heads_x1s)]
+                status = "Empirical, %s head, %s refs, case 4. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
+                return _result_, status 
             else:
                 print("?????")   #之前已经强制就绪了两个标识物，要么都有要么都没有，不该出现这种情况。
                 sys.exit()

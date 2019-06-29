@@ -38,3 +38,8 @@ NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
 CAR_TO_CAR_DIR = "/home/user/list/"
+
+
+
+
+######################MMD:

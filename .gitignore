@@ -9,6 +9,11 @@
 *.log
 *.json
 
+*.so
+*.rar
+*.zip
+*.tar
+*.gz
 *.o
 *.pyc
 __pycache__

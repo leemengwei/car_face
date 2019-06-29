@@ -184,6 +184,5 @@ def main():
                         results2json(dataset, outputs_, result_file)
                         coco_eval(result_file, eval_types, dataset.coco)
 
-
 if __name__ == '__main__':
     main()

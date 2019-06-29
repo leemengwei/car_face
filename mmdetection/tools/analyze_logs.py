@@ -5,7 +5,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
+from IPython import embed
 
 def cal_train_time(log_dicts, args):
     for i, log_dict in enumerate(log_dicts):

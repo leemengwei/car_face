@@ -21,6 +21,7 @@ import sys
 from IPython import embed
 sys.path.append("i/home/user/PersonDetection99/car_face/")
 from config import *
+
 def single_gpu_frame_detection(model, _data, show=False):
     model.eval()
     start = time.time()
@@ -51,7 +52,7 @@ def single_gpu_frame_detection(model, _data, show=False):
         y2s = np.hstack((y2s, y3))
         scores = np.hstack((scores, threshold))
         label_names.append(label)
-    names = ["angle", "angle_r", "top", "top_r", "head"]
+    names = ["angle", "top", "head", " ", " "]
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Details:")
     print(label_names, scores)
     return x1s,y1s,x2s,y2s, scores,label_names, elapsed_time
@@ -201,7 +202,7 @@ def main():
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
         model.CLASSES = dataset.CLASSES
-    model.CLASSES = ("angle","angle_r","top","top_r","head")
+    model.CLASSES = ("angle","top","head")
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, args.show)
