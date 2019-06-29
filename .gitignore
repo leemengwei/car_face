@@ -9,6 +9,7 @@
 *.log
 *.json
 
+*.pkl
 *.so
 *.rar
 *.zip
