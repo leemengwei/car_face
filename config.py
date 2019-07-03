@@ -10,11 +10,18 @@
 
 _LIGHT_THRESHOLD = 1
 
-def get_confidence(): 
-    CONFIDENCE_THRESHOLD = 0.595
+def night_cast():
     with open("./daylight", 'r') as f:
         light = int(f.readline())
     if light<_LIGHT_THRESHOLD:
+        NIGHT_CAST = True
+    else:
+        NIGHT_CAST = False
+    return NIGHT_CAST
+
+def get_confidence(): 
+    CONFIDENCE_THRESHOLD = 0.595
+    if night_cast():
         CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半
     return CONFIDENCE_THRESHOLD
 

@@ -288,9 +288,13 @@ class A(camera):
                 status = "Predicted, %s head, %s refs, case 3. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
                 return _result_, status
             elif len(angle_x1)==0 and len(top_x1)==0:   #没有任何标识物
-                possible_seat = [1,2,3,4,5]  #将从经验位置顺序里直接取
-                _result_ = possible_seat[:len(heads_x1s)]
-                status = "Empirical, %s head, %s refs, case 4. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
+                if config.night_cast():
+                    possible_seat = [1,2,3,4,5]  #将从经验位置顺序里直接取
+                    _result_ = possible_seat[:len(heads_x1s)]
+                    status = "Empirical, %s head, %s refs, case 4. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
+                else:
+                    _result_ = [0,]
+                    status = "Empirical, %s head, %s refs, case 5. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
                 return _result_, status 
             else:
                 print("?????")   #之前已经强制就绪了两个标识物，要么都有要么都没有，不该出现这种情况。
