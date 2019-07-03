@@ -211,7 +211,9 @@ data = dict(
     train=dict(
         type=dataset_type,
         ann_file=data_root+"instances_train2017_aug_4.json",
+        #ann_file=data_root+"instances_val2017_4_tiny.json",
         img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_aug_here/images/train2017/",
+        #img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_here/images/val2017/",
         img_scale=[(1120, 630),(1120,540),(960,630),(960,540)],
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -233,9 +235,12 @@ data = dict(
     test=dict(
         type=dataset_type,
         ann_file=data_root+"instances_val2017_4.json",
+        #ann_file=data_root+"instances_train2017_aug_4.json",
         img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_here/images/val2017/",
+        #img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_aug_here/images/train2017/",
         #img_scale=[(1200, 800),(1200,600),(1200,400),(1200,1000)],
         img_scale=(960, 540),
+        #img_scale=(1120, 630),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
@@ -243,15 +248,15 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.003, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=3000,
+    warmup_iters=10000,
     warmup_ratio=1.0 / 4,
-    step=[16, 19])
+    step=[2, 6, 10])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -262,10 +267,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 26
+total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/car_face'
 load_from = "coco_pretrained/coco_cascade_rcnn_hrnetv2_w32_fpn_4.pth"
 resume_from = None
+#resume_from = "./work_dirs/car_face/latest.pth"
 workflow = [('train', 1)]

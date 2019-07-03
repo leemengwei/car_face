@@ -63,7 +63,7 @@ def plot_curve(log_dicts, args):
                 ax = plt.gca()
                 ax.set_xticks(xs)
                 plt.xlabel('epoch')
-                plt.plot(xs, ys, label=legend[i * num_metrics + j], marker='o')
+                plt.plot(xs[:len(ys)], ys, label=legend[i * num_metrics + j], marker='o')
             else:
                 xs = []
                 ys = []

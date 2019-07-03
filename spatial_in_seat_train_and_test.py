@@ -62,7 +62,7 @@ def validate(model, validate_loader):
         pbar.set_description('Validate: [{}/{} ({:.0f}%)]'.format(idx*len(data), len(validate_loader.dataset), 100.*idx/len(validate_loader)))
         output_seat = output_probabilities.argmax(dim=1)+1
         target_seat = target.argmax(dim=1)+1
-        confusion_tmp = metrics.confusion_matrix(output_seat, target_seat, labels=[1,2,3,4,5])   #应该先true 再pred
+        confusion_tmp = metrics.confusion_matrix(output_seat.cpu(), target_seat.cpu(), labels=[1,2,3,4,5])   #应该先true 再pred
         confusions = confusions + confusion_tmp
     validate_loss_mean = LOSS/len(validate_loader.dataset)
     precision = confusions.diagonal().sum()/confusions.sum()

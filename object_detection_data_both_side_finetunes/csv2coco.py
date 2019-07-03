@@ -67,8 +67,8 @@ class Csv2CoCo:
     # 构建COCO的image字段
     def _image(self, path):
         image = {}
-        print(path)
         img = cv2.imread(self.image_dir + path)
+        print(self.image_dir+path)
         image['height'] = img.shape[0]
         image['width'] = img.shape[1]
         image['id'] = self.img_id
@@ -110,42 +110,75 @@ class Csv2CoCo:
    
 
 if __name__ == '__main__':
-    csv_file = "augmented_boxes.csv"
-    image_dir = "train_aug/"
+    aug = False
+    if aug:
+        csv_train_file = "augmented_boxes.csv"
+        csv_val_file = "val.csv"
+        image_dir_train = "train_aug_images/"
+        image_dir_val = "val_images/"
+    else:
+        csv_train_file = "train.csv"
+        csv_val_file = "val.csv"
+        image_dir_train = "train_images/"
+        image_dir_val = "val_images/"
     saved_coco_path = "./generate_coco/"
     # 整合csv格式标注文件
-    total_csv_annotations = {}
-    annotations = pd.read_csv(csv_file,header=None).values
-    for annotation in annotations:
+    total_train_csv_annotations = {}
+    total_val_csv_annotations = {}
+    annotations_train = pd.read_csv(csv_train_file,header=None).values
+    annotations_val = pd.read_csv(csv_val_file,header=None).values
+    for annotation in annotations_train:
+        print("train:",annotation)
         key = annotation[0].split(os.sep)[-1]
         value = np.array([annotation[1:]])
-        if key in total_csv_annotations.keys():
-            total_csv_annotations[key] = np.concatenate((total_csv_annotations[key],value),axis=0)
+        if key in total_train_csv_annotations.keys():
+            total_train_csv_annotations[key] = np.concatenate((total_train_csv_annotations[key],value),axis=0)
         else:
-            total_csv_annotations[key] = value
-    # 按照键值划分数据
-    total_keys = list(total_csv_annotations.keys())
-    train_keys = total_keys
-    val_keys = []
-    #train_keys, val_keys = train_test_split(total_keys, test_size=0.2)
+            total_train_csv_annotations[key] = value
+    for annotation in annotations_val:
+        print("val:",annotation)
+        key = annotation[0].split(os.sep)[-1]
+        value = np.array([annotation[1:]])
+        if key in total_val_csv_annotations.keys():
+            total_val_csv_annotations[key] = np.concatenate((total_val_csv_annotations[key],value),axis=0)
+        else:
+            total_val_csv_annotations[key] = value
+    train_keys = list(total_train_csv_annotations.keys())
+    val_keys = list(total_val_csv_annotations.keys())
     print("train_n:", len(train_keys), 'val_n:', len(val_keys))
     # 创建必须的文件夹
-    if not os.path.exists('%scocos_aug_here/annotations/'%saved_coco_path):
-        os.makedirs('%scocos_aug_here/annotations/'%saved_coco_path)
-    if not os.path.exists('%scocos_aug_here/images/train2017/'%saved_coco_path):
-        os.makedirs('%scocos_aug_here/images/train2017/'%saved_coco_path)
-    if not os.path.exists('%scocos_aug_here/images/val2017/'%saved_coco_path):
-        os.makedirs('%scocos_aug_here/images/val2017/'%saved_coco_path)
+    if aug:
+        if not os.path.exists('%scocos_aug_here/annotations/'%saved_coco_path):
+            os.makedirs('%scocos_aug_here/annotations/'%saved_coco_path)
+        if not os.path.exists('%scocos_aug_here/images/train2017/'%saved_coco_path):
+            os.makedirs('%scocos_aug_here/images/train2017/'%saved_coco_path)
+        if not os.path.exists('%scocos_aug_here/images/val2017/'%saved_coco_path):
+            os.makedirs('%scocos_aug_here/images/val2017/'%saved_coco_path)
+    else:
+        if not os.path.exists('%scocos_here/annotations/'%saved_coco_path):
+            os.makedirs('%scocos_here/annotations/'%saved_coco_path)
+        if not os.path.exists('%scocos_here/images/train2017/'%saved_coco_path):
+            os.makedirs('%scocos_here/images/train2017/'%saved_coco_path)
+        if not os.path.exists('%scocos_here/images/val2017/'%saved_coco_path):
+            os.makedirs('%scocos_here/images/val2017/'%saved_coco_path)
     # 把训练集转化为COCO的json格式
-    l2c_train = Csv2CoCo(image_dir=image_dir,total_annos=total_csv_annotations)
+    l2c_train = Csv2CoCo(image_dir=image_dir_train,total_annos=total_train_csv_annotations)
     train_instance = l2c_train.to_coco(train_keys)
-    l2c_train.save_coco_json(train_instance, '%scocos_aug_here/annotations/instances_train2017.json'%saved_coco_path)
     # 把验证集转化为COCO的json格式
-    l2c_val = Csv2CoCo(image_dir=image_dir,total_annos=total_csv_annotations)
+    l2c_val = Csv2CoCo(image_dir=image_dir_val,total_annos=total_val_csv_annotations)
     val_instance = l2c_val.to_coco(val_keys)
-    l2c_val.save_coco_json(val_instance, '%scocos_aug_here/annotations/instances_val2017.json'%saved_coco_path)
-    for file in train_keys:
-        shutil.copy(image_dir+file,"%scocos_aug_here/images/train2017/"%saved_coco_path)
-    for file in val_keys:
-        shutil.copy(image_dir+file,"%scocos_aug_here/images/val2017/"%saved_coco_path)
+    if aug:
+        l2c_train.save_coco_json(train_instance, '%scocos_aug_here/annotations/instances_train2017.json'%saved_coco_path)
+        l2c_val.save_coco_json(val_instance, '%scocos_aug_here/annotations/instances_val2017.json'%saved_coco_path)
+        for file in train_keys:
+            shutil.copy(image_dir_train+file,"%scocos_aug_here/images/train2017/"%saved_coco_path)
+        for file in val_keys:
+            shutil.copy(image_dir_val+file,"%scocos_aug_here/images/val2017/"%saved_coco_path)
+    else:
+        l2c_train.save_coco_json(train_instance, '%scocos_here/annotations/instances_train2017.json'%saved_coco_path)
+        l2c_val.save_coco_json(val_instance, '%scocos_here/annotations/instances_val2017.json'%saved_coco_path)
+        for file in train_keys:
+            shutil.copy(image_dir_train+file,"%scocos_here/images/train2017/"%saved_coco_path)
+        for file in val_keys:
+            shutil.copy(image_dir_val+file,"%scocos_here/images/val2017/"%saved_coco_path)
 

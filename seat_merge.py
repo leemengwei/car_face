@@ -15,6 +15,8 @@ import copy
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+CONFIDENCE_THRESHOLD = config.get_confidence()
+
 #注意，这里的所有融合函数唯一可能要考虑的问题是对0的剔除，至于诸如“有车就一定有人”的策略已经在单帧就实现完毕了。
 def seat_merge(A_prediction, B_prediction):
     predictions_merged = set(A_prediction)|set(B_prediction) 
@@ -68,7 +70,7 @@ class Thread_A(threading.Thread):
         filelist = glob.glob("/home/user/left/*.jpg")
         for idx, filename in enumerate(filelist):
             A_image_data = camera.get_image_data(filename)
-            A_pos = A_program.self_logic(A_image_data)
+            A_pos = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
             print(idx, A_pos)
 
 class Thread_B(threading.Thread):
@@ -76,7 +78,7 @@ class Thread_B(threading.Thread):
         filelist = glob.glob("/home/user/right/*.jpg")
         for idx, filename in enumerate(filelist):
             B_image_data = camera.get_image_data(filename)
-            B_pos = B_program.self_logic(B_image_data)
+            B_pos = B_program.self_logic(B_image_data, CONFIDENCE_THRESHOLD)
             print(idx, B_pos)
 
 if __name__ == "__main__":
@@ -102,11 +104,11 @@ if __name__ == "__main__":
         #A side:
         plt.figure()
         A_image_data = camera.get_image_data(A_filename)
-        A_pos, A_plt = A_program.self_logic(A_image_data)
+        A_pos, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
         #B side:
         plt.figure()
         B_image_data = camera.get_image_data(B_filename)
-        B_pos, B_plt = B_program.self_logic(B_image_data)
+        B_pos, B_plt = B_program.self_logic(B_image_data, CONFIDENCE_THRESHOLD)
         #Both side:
         plt.figure()
         positions_peer_car = seat_merge_all(A_pos+B_pos) 

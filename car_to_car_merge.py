@@ -18,7 +18,8 @@ import seat_merge
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "Double side...")
     args = parser.parse_args()
-
+     
+    CONFIDENCE_THRESHOLD = config.get_confidence()
     #Initialization:
     #A:
     print("Initializing front camera A...")
@@ -57,13 +58,13 @@ if __name__ == "__main__":
             if config.VISUALIZATION:
                 plt.figure()
             A_image_data = camera.get_image_data(image)
-            A_pos, A_plt = A_program.self_logic(A_image_data)
+            A_pos, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
             preds += A_pos
         for image in images_right:
             if config.VISUALIZATION:
                 plt.figure()
             B_image_data = camera.get_image_data(image)
-            B_pos, B_plt = B_program.self_logic(B_image_data)
+            B_pos, B_plt = B_program.self_logic(B_image_data, CONFIDENCE_THRESHOLD)
             preds += B_pos
         car_result_union = seat_merge.seat_merge_all(preds, method = "union")
         car_result_vote = seat_merge.seat_merge_all(preds, method = "vote")

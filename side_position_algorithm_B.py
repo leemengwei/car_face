@@ -34,22 +34,22 @@ class B(A):
         self.side = "right"
         #super().__init__(self.camera_number)
         #Init model:
-        self.anlges_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))
-        self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
-        #load model structure
-        self.net_to_detect_anlges = model.resnet152(num_classes = 5, pretrained=True, root_dir=self.root_dir)
-        self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=5)
-        #load model params
-        self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])
-        self.net_to_detect_objs= self.get_mmd_model_and_template()
-        self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
-        #switch mode
-        self.net_to_detect_angles.cuda().eval()
-        self.net_to_detect_objs.cuda().eval()
-        self.net_spatial.cuda().eval()
-        #Init internal parameters:
-        self.seq_ground_signal = collections.deque(maxlen=200)
-        self.seq_threshold_signal = collections.deque(maxlen=200)
+        #self.anlges_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))
+        #self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
+        ##load model structure
+        #self.net_to_detect_anlges = model.resnet152(num_classes = 5, pretrained=True, root_dir=self.root_dir)
+        #self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=5)
+        ##load model params
+        #self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])
+        #self.net_to_detect_objs= self.get_mmd_model_and_template()
+        #self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
+        ##switch mode
+        #self.net_to_detect_angles.cuda().eval()
+        #self.net_to_detect_objs.cuda().eval()
+        #self.net_spatial.cuda().eval()
+        ##Init internal parameters:
+        #self.seq_ground_signal = collections.deque(maxlen=200)
+        #self.seq_threshold_signal = collections.deque(maxlen=200)
         print("Program B-Initialized.")
 
 if __name__ == "__main__":

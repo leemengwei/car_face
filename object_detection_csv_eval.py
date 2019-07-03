@@ -171,6 +171,7 @@ def evaluate(
 
     all_detections     = _get_detections(generator, retinanet, score_threshold=score_threshold, max_detections=max_detections, save_path=save_path)
     all_annotations    = _get_annotations(generator)
+    embed()
     counters = {}
     average_precisions = {}
     f1_scores = {}

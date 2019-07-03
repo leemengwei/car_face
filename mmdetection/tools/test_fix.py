@@ -17,12 +17,183 @@ from mmdet.datasets import build_dataloader, get_dataset
 from mmdet.models import build_detector
 from mmdet.apis import inference_detector, show_result,init_detector
 
-import sys
+import sys,copy
 from IPython import embed
-sys.path.append("i/home/user/PersonDetection99/car_face/")
-from config import *
+sys.path.append("/home/user/PersonDetection99/car_face/")
 
-def single_gpu_frame_detection(model, _data, show=False):
+def coco_eval_substitude(outputs, dataset):
+    f1s = np.empty(shape=(0,len(dataset.cat_ids)))
+    for SCORE_THR in np.linspace(0,1,101):
+        for iou_threshold in [0.5]: #np.linspace(0.3,0.5,21):
+            #print("Score threshold:%s, iou_threshold:%s"%(SCORE_THR, iou_threshold))
+            f1s = np.vstack((f1s, my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold)))
+    print("Please set score thr to %s, to get max performance of %s"%(np.linspace(0,1,101)[f1s[:,-1].argmax()], f1s[:,-1].max()), f1s[f1s[:,-1].argmax()])
+
+def compute_overlap(a, b):
+    """
+    Parameters
+    ----------
+    a: (N, 4) ndarray of float
+    b: (K, 4) ndarray of float
+    Returns
+    -------
+    overlaps: (N, K) ndarray of overlap between boxes and query_boxes
+    """
+    area = (b[:, 2] - b[:, 0]) * (b[:, 3] - b[:, 1])
+
+    iw = np.minimum(np.expand_dims(a[:, 2], axis=1), b[:, 2]) - np.maximum(np.expand_dims(a[:, 0], 1), b[:, 0])
+    ih = np.minimum(np.expand_dims(a[:, 3], axis=1), b[:, 3]) - np.maximum(np.expand_dims(a[:, 1], 1), b[:, 1])
+
+    iw = np.maximum(iw, 0)
+    ih = np.maximum(ih, 0)
+
+    ua = np.expand_dims((a[:, 2] - a[:, 0]) * (a[:, 3] - a[:, 1]), axis=1) + area - iw * ih
+
+    ua = np.maximum(ua, np.finfo(float).eps)
+
+    intersection = iw * ih
+
+    return intersection / ua
+
+def _compute_ap_area(recall, precision):     #Name modified by LMW
+    """ Compute the average precision, given the recall and precision CURVES.
+    Code originally from https://github.com/rbgirshick/py-faster-rcnn.
+    # Arguments
+        recall:    The recall curve (list).
+        precision: The precision curve (list).
+    # Returns
+        The average precision as computed in py-faster-rcnn.
+    """
+    # correct AP calculation
+    # first append sentinel values at the end
+    mrec = np.concatenate(([0.], recall, [1.]))
+    mpre = np.concatenate(([0.], precision, [0.]))
+
+    # compute the precision envelope
+    for i in range(mpre.size - 1, 0, -1):
+        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+    # to calculate area under PR curve, look for points
+    # where X axis (recall) changes value
+    i = np.where(mrec[1:] != mrec[:-1])[0]
+
+    # and sum (\Delta recall) * prec
+    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    return ap
+
+def my_csv_eval(all_detections, dataset, SCORE_THR, iou_threshold):
+    #使用旧版（retinanet的csveval），先准备其需要的detections：
+    for idx1,detections in enumerate(all_detections):
+        for idx2,i in enumerate(detections): 
+            detections[idx2] = i[np.where(i[:,-1]>SCORE_THR)]
+        all_detections[idx1] = detections
+    
+    #使用旧版（retinanet的csveval），再准备其需要的annotations：
+    all_annotations = []
+    for i in range(len(dataset)):
+        tmp_annotation_now = dataset.get_ann_info(i)['bboxes'][np.argsort(dataset.get_ann_info(i)['labels'])]
+        class_idx_now = dataset.get_ann_info(i)['labels'][np.argsort(dataset.get_ann_info(i)['labels'])]
+        annotation_now = list(np.tile(0,len(dataset.cat_ids)))
+        for idx,i in enumerate(class_idx_now): 
+            try: 
+                annotation_now[i-1] = np.vstack((annotation_now[i-1], tmp_annotation_now[idx]))
+            except: 
+                annotation_now[i-1] = tmp_annotation_now[idx].reshape(1,-1)
+        _fill_idx = set(dataset.cat_ids) - set(class_idx_now)
+        for i in _fill_idx:
+            annotation_now[i-1] = np.empty(shape=(0,len(dataset.cat_ids)))
+        all_annotations.append(annotation_now)
+
+    #以下由object_detection_csv_eval改写，复制重写了，不调用了太乱了。
+    counters = {}
+    average_precisions = {}
+    f1_scores = {}
+    recalling = {}
+    precising = {}
+    for label in dataset.cat_ids:
+        false_positives = np.zeros((0,))
+        true_positives  = np.zeros((0,))
+        scores          = np.zeros((0,))
+        num_annotations = 0.0
+        for i in range(len(dataset)):
+            detections           = all_detections[i][label-1]
+            annotations          = all_annotations[i][label-1]
+            num_annotations     += annotations.shape[0]
+            detected_annotations = []
+
+            for d in detections:
+                scores = np.append(scores, d[4])
+
+                if annotations.shape[0] == 0:
+                    false_positives = np.append(false_positives, 1)
+                    true_positives  = np.append(true_positives, 0)
+                    continue
+
+                overlaps            = compute_overlap(np.expand_dims(d, axis=0), annotations)
+                assigned_annotation = np.argmax(overlaps, axis=1)
+                max_overlap         = overlaps[0, assigned_annotation]
+
+                if max_overlap >= iou_threshold and assigned_annotation not in detected_annotations:
+                    false_positives = np.append(false_positives, 0)
+                    true_positives  = np.append(true_positives, 1)
+                    detected_annotations.append(assigned_annotation)
+                else:
+                    false_positives = np.append(false_positives, 1)
+                    true_positives  = np.append(true_positives, 0)
+
+        # no annotations -> AP for this class is 0 (is this correct?)
+        if num_annotations == 0:
+            counters[dataset.cat2label[label]] = 0
+            average_precisions[dataset.cat2label[label]] = 0
+            f1_scores[dataset.cat2label[label]] = 0
+            recalling[dataset.cat2label[label]] = 0
+            precising[dataset.cat2label[label]] = 0
+            continue
+
+        # sort by score
+        indices         = np.argsort(-scores)
+        false_positives = false_positives[indices]
+        true_positives  = true_positives[indices]
+
+        # compute false positives and true positives
+        false_positives = np.cumsum(false_positives)
+        true_positives  = np.cumsum(true_positives)
+
+        # compute precision_single and recall_single by LMW
+        if len(true_positives)==0:
+            precision_single = 0
+            recall_single = 0
+        else:
+            precision_single = true_positives[-1]/(true_positives[-1]+false_positives[-1])
+            recall_single = true_positives[-1]/num_annotations
+        precising[dataset.cat2label[label]] = np.round(precision_single,3)
+        recalling[dataset.cat2label[label]] = np.round(recall_single,3)
+        # compute f1 score by LMW:
+        if recall_single+precision_single!=0:
+            f1_score = (2*recall_single*precision_single)/(recall_single+precision_single)
+        else:
+            f1_score = 0
+        f1_scores[dataset.cat2label[label]] = np.round(f1_score,3)
+
+        # compute recall and precision
+        recall    = true_positives / num_annotations
+        precision = true_positives / np.maximum(true_positives + false_positives, np.finfo(np.float64).eps)
+
+        # compute average precision 这里原作者是根据precision和recall曲线的area来计算area的，和我使用conf点做出来的一样。
+        average_precision  = _compute_ap_area(recall, precision)
+        average_precisions[dataset.cat2label[label]] = np.round(average_precision,3)
+        counters[dataset.cat2label[label]] = num_annotations  
+    #print('\nmAP:')
+    #for label in range(generator.num_classes()):
+    #    label_name = dataset.cat2label[label]
+    #    print('{}: {}'.format(label_name, average_precisions[label][0]))
+    #我自己的recalling和他用area算得一样，这里借用原作者的，只为顺便显示一下“多少个”。
+    #print("Counters:", counters)
+    #print("Precising:", precising, "\nRecalling:", average_precisions, "\nF1_at_this_conf:", f1_scores, np.array(list(f1_scores.values())).sum())
+    return np.array(list(f1_scores.values()))
+
+def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
+    print("Using confidence score:", CONFIDENCE_THRESHOLD)
     model.eval()
     start = time.time()
     result = inference_detector(model, _data)
@@ -53,7 +224,7 @@ def single_gpu_frame_detection(model, _data, show=False):
         scores = np.hstack((scores, threshold))
         label_names.append(label)
     names = ["angle", "top", "head", " ", " "]
-    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Details:")
+    print(">>>>>>>>>>>>MMD>>>>>>>>>Details:")
     print(label_names, scores)
     return x1s,y1s,x2s,y2s, scores,label_names, elapsed_time
 
@@ -63,12 +234,14 @@ def single_gpu_test(model, data_loader, show=False):
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        #print("\nTesting on %s"%data_loader.dataset.img_prefix+data_loader.dataset.img_infos[i]['filename'])
+        #sys.stdout.flush()
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
 
         if show:
-            model.module.show_result(data, result, dataset.img_norm_cfg)
+            model.module.show_result(data, result, dataset.img_norm_cfg, score_thr=SCORE_THR)   #score_thr is here, hidden
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -219,19 +392,22 @@ def main():
             print('Starting evaluate {}'.format(' and '.join(eval_types)))
             if eval_types == ['proposal_fast']:
                 result_file = args.out
-                coco_eval(result_file, eval_types, dataset.coco)
+                #coco_eval(result_file, eval_types, dataset.coco)
+                coco_eval_substitude(outputs, dataset)
             else:
                 if not isinstance(outputs[0], dict):
                     result_file = args.out + '.json'
-                    results2json(dataset, outputs, result_file)
-                    coco_eval(result_file, eval_types, dataset.coco)
+                    #results2json(dataset, outputs, result_file)
+                    #coco_eval(result_file, eval_types, dataset.coco)
+                    coco_eval_substitude(outputs, dataset)
                 else:
                     for name in outputs[0]:
                         print('\nEvaluating {}'.format(name))
                         outputs_ = [out[name] for out in outputs]
                         result_file = args.out + '.{}.json'.format(name)
-                        results2json(dataset, outputs_, result_file)
-                        coco_eval(result_file, eval_types, dataset.coco)
+                        #results2json(dataset, outputs_, result_file)
+                        #coco_eval(result_file, eval_types, dataset.coco)
+                        coco_eval_substitude(outputs, dataset)
 
 
 if __name__ == '__main__':

@@ -39,7 +39,6 @@ from mmdet.models import build_detector
 import mmdetection.tools.test_fix as test_fix
 from mmdet.apis import init_detector
 
-
 class A(camera):
     def __init__(self, root_dir):
         super(A, self).__init__()
@@ -50,18 +49,18 @@ class A(camera):
         self.side = "left"
         #super().__init__(self.camera_number)
         #Init model:
-        self.angles_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))
+        #self.angles_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))  #will depricate in next version
         self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
         #load model structure
-        self.net_to_detect_angles = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)
+        #self.net_to_detect_angles = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)   #will depricate in next version
         self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=config.NUM_OF_SEATS_PEER_CAR)
         #load model params
         #use mmd now:
-        self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])
-        self.net_to_detect_objs= self.get_mmd_model_and_template()
+        #self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])  #will depricate in next version
+        self.net_to_detect_objs = self.get_mmd_model_and_template()
         self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
         #switch mode
-        self.net_to_detect_angles.cuda().eval()
+        #self.net_to_detect_angles.cuda().eval()
         self.net_to_detect_objs.cuda().eval()
         self.net_spatial.cuda().eval()
         #Init internal parameters:
@@ -78,7 +77,7 @@ class A(camera):
         model = init_detector(MMD_CONFIG, MMD_WEIGHTS)
         return model
 
-    def get_objs_position(self, angle_cam_frame, net_cam_frame):
+    def get_objs_position(self, angle_cam_frame, net_cam_frame, CONFIDENCE_THRESHOLD):
         with no_grad():
             #Compensation
             #angles_x1s, angles_y1s, angles_x2s, angles_y2s, angles_scores, angles_indexes, angles_elapsed_time = visualize.frame_detection(self.net_to_detect_angles, angle_cam_frame, confidence=0.8)
@@ -89,18 +88,18 @@ class A(camera):
             #angles_y2s = angles_y2s[np.where(angles_indexes!=4)]
             #angles_scores = angles_scores[np.where(angles_indexes!=4)]
             #angles_indexes = angles_indexes[np.where(angles_indexes!=4)]
-            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, show=False)
+            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
             #But use its refs
-            try:
-                objs_x1s = np.append(objs_x1s, angles_x1s)
-                objs_y1s = np.append(objs_y1s, angles_y1s)
-                objs_x2s = np.append(objs_x2s, angles_x2s)
-                objs_y2s = np.append(objs_y2s, angles_y2s)
-                objs_scores = np.append(objs_scores, angles_scores)
-                objs_indexes = np.append(objs_indexes, angles_indexes).astype(int)
-            except:
-                print("COMPENSATING ERROR")
-                pass
+            #try:
+            #    objs_x1s = np.append(objs_x1s, angles_x1s)
+            #    objs_y1s = np.append(objs_y1s, angles_y1s)
+            #    objs_x2s = np.append(objs_x2s, angles_x2s)
+            #    objs_y2s = np.append(objs_y2s, angles_y2s)
+            #    objs_scores = np.append(objs_scores, angles_scores)
+            #    objs_indexes = np.append(objs_indexes, angles_indexes).astype(int)
+            #except:
+            #    print("COMPENSATING ERROR")
+            #    pass
             print("This:", "index",objs_indexes, "score",objs_scores)
             classes = config.CLASSES
             objs_names = np.array([classes[i] for i in objs_indexes])
@@ -303,11 +302,10 @@ class A(camera):
         except:
             pass
         return positions_peer_car
-    def self_logic(self, image_data):
+    def self_logic(self, image_data, CONFIDENCE_THRESHOLD):
         if image_data.dtype == np.uint8:   #If come from C
             print("Must be C running...")
             image_data = image_data.astype(float)/255
-        global_signal = 1
         #print(image_data.min(), image_data.mean(), image_data.max())
         cam_frame = image_data
         #判定当前全局信号，GPU是否开始检测
@@ -319,7 +317,7 @@ class A(camera):
         #检测标识物和人头:
         refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, \
             heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names \
-                =  self.get_objs_position(angle_cam_frame, net_cam_frame)
+                =  self.get_objs_position(angle_cam_frame, net_cam_frame, CONFIDENCE_THRESHOLD)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
         if frame_status == "ok":
@@ -335,11 +333,6 @@ class A(camera):
             positions_peer_car = [0,]
             time_used = time.time() - start_time
         print("Net:", self.netname, "Time_used:", np.round(time_used, 4), "Judge_stauts:", status, "Positions_peer_frame_peer_side:************", positions_peer_car, "********")
-        #并且启动旁侧程序：
-        #pass, 两侧可能等价，同时启动。
-        #Record current status:
-        self.seq_ground_signal.append(global_signal)
-        self.seq_threshold_signal.append(0.5)
         #VISUALIZATION:
         if VISUALIZATION:
             #Plot1:
@@ -348,23 +341,19 @@ class A(camera):
             ax1.imshow(cam_frame)
             ax1.set_title("View of Camera %s, always keep running"%self.netname)
             ax1.axis('off')
-            if global_signal is 0:    #没有全局信号，则plot1 直接留空
-                network_status = "Reference point detection: Standby\n\nHead detection: Standby\n\nNo signal received, not running"
-            else:     #有全局信号， 开始plot1
-                network_status = "Reference point detection: Running\nHead detection: Running\n\n%s cars detected, %s heads detected"%(len(refs_x1s), len(heads_x1s))
-                #plot1中画标识物：
-                if UNVEIL:
-                    currentAxis = plt.gca()
-                    angle_color = 'r' if angle_score != 0 else 'blue'
-                    rect_1 = matplotlib.patches.Rectangle((angle_x1, angle_y1), angle_x2-angle_x1, angle_y2-angle_y1, linewidth=1, edgecolor=angle_color, facecolor=angle_color, alpha=0.4)
-                    top_color = 'r' if top_score != 0 else 'blue'
-                    rect_2 = matplotlib.patches.Rectangle((top_x1, top_y1), top_x2-top_x1, top_y2-top_y1, linewidth=1, edgecolor=top_color, facecolor=top_color, alpha=0.4)
-                    if len(angle_score)>0:
-                        ax1.text(angle_x1, angle_y1,"class:%s, score:%s"%(angle_name, np.round(angle_score,2)), color=angle_color)
-                        currentAxis.add_patch(rect_1)
-                    if len(top_score)>0: 
-                        ax1.text(top_x1, top_y1,"class:%s, score:%s"%(top_name, np.round(top_score,2)), color=top_color)
-                        currentAxis.add_patch(rect_2)
+            #plot1中画标识物：
+            if UNVEIL:
+                currentAxis = plt.gca()
+                angle_color = 'r' if angle_score != 0 else 'blue'
+                rect_1 = matplotlib.patches.Rectangle((angle_x1, angle_y1), angle_x2-angle_x1, angle_y2-angle_y1, linewidth=1, edgecolor=angle_color, facecolor=angle_color, alpha=0.4)
+                top_color = 'r' if top_score != 0 else 'blue'
+                rect_2 = matplotlib.patches.Rectangle((top_x1, top_y1), top_x2-top_x1, top_y2-top_y1, linewidth=1, edgecolor=top_color, facecolor=top_color, alpha=0.4)
+                if len(angle_score)>0:
+                    ax1.text(angle_x1, angle_y1,"class:%s, score:%s"%(angle_name, np.round(angle_score,2)), color=angle_color)
+                    currentAxis.add_patch(rect_1)
+                if len(top_score)>0: 
+                    ax1.text(top_x1, top_y1,"class:%s, score:%s"%(top_name, np.round(top_score,2)), color=top_color)
+                    currentAxis.add_patch(rect_2)
             #plot1中画人头：
             for heads_idx, heads_i in enumerate(heads_x1s):
                 currentAxis = plt.gca()
@@ -384,7 +373,6 @@ class A(camera):
                 sns.heatmap(seats, linewidths=0.1, vmin=0, vmax=2, cmap='Reds', square=True, linecolor='white', annot=True, ax=ax2, xticklabels=['1','2','3','4','5'])
                 ax2.set_xlabel("Seat number")
                 ax2.set_ylabel("Seat occupied")
-                ax2.set_title(network_status)
             #Plot3:
             if UNVEIL:
                 ax3 = plt.subplot(224)
@@ -398,7 +386,7 @@ class A(camera):
             ax3.imshow(plt.imread(view_name))
             plt.draw()
             plt.pause(0.001)
-            #input()
+            input()
         return [positions_peer_car, plt]
 
 if __name__ == "__main__":
@@ -414,5 +402,5 @@ if __name__ == "__main__":
     filelist = glob.glob("../left/*.jpg")    #TODO : Feed A.py left data to get correct results
     for idx, filename in enumerate(filelist[:]):
         image_data = camera.get_image_data(filename)
-        A_program.self_logic(image_data)
+        A_program.self_logic(image_data, CONFIDENCE_THRESHOLD)
 

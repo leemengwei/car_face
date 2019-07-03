@@ -9,7 +9,6 @@ from ..registry import BACKBONES
 from ..utils import build_norm_layer, build_conv_layer
 from .resnet import BasicBlock, Bottleneck
 
-
 class HRModule(nn.Module):
     """ High-Resolution Module for HRNet. In this module, every branch
     has 4 BasicBlocks/Bottlenecks. Fusion/Exchange is in this module.
