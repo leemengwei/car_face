@@ -17,7 +17,6 @@ class Worker():
         else:  #side is "right"
             self.program = B.B(self.root_dir)
     def do(self, image_data, CONFIDENCE_THRESHOLD):
-        print("DO", CONFIDENCE_THRESHOLD)
         positions, plt = self.program.self_logic(image_data, CONFIDENCE_THRESHOLD)
         return positions
 class thread_manager(threading.Thread):

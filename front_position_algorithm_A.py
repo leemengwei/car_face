@@ -47,34 +47,32 @@ class A(camera):
             self.root_dir = self.root_dir.decode("utf-8")
         self.netname = "A"
         self.side = "left"
-        #super().__init__(self.camera_number)
         #Init model:
-        #self.angles_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))  #will depricate in next version
-        self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
-        #load model structure
+        #载入结构：
         #self.net_to_detect_angles = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)   #will depricate in next version
         self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=config.NUM_OF_SEATS_PEER_CAR)
-        #load model params
+        #载入参数：
+        #self.angles_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))  #will depricate in next version
+        self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
         #use mmd now:
         #self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])  #will depricate in next version
-        self.net_to_detect_objs = self.get_mmd_model_and_template()
+        self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_CONFIG, MMD_WEIGHTS)
+        self.net_to_detect_objs_night = self.get_mmd_model_and_template(MMD_CONFIG_NIGHT, MMD_WEIGHTS_NIGHT)
         self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
-        #switch mode
+        #put on gpu:
         #self.net_to_detect_angles.cuda().eval()
         self.net_to_detect_objs.cuda().eval()
+        self.net_to_detect_objs_night.cuda().eval()
         self.net_spatial.cuda().eval()
-        #Init internal parameters:
-        self.seq_ground_signal = collections.deque(maxlen=200)
-        self.seq_threshold_signal = collections.deque(maxlen=200)
         print("Program %s-Initialized."%self.netname)
-    def get_mmd_model_and_template(self):
-        cfg = mmcv.Config.fromfile(MMD_CONFIG)
+    def get_mmd_model_and_template(self, _mmd_config, _mmd_weights):
+        cfg = mmcv.Config.fromfile(_mmd_config)
         # set cudnn_benchmark
         if cfg.get('cudnn_benchmark', False):
             torch.backends.cudnn.benchmark = True
         cfg.model.pretrained = None
         cfg.data.test.test_mode = True
-        model = init_detector(MMD_CONFIG, MMD_WEIGHTS)
+        model = init_detector(_mmd_config, _mmd_weights)
         return model
 
     def get_objs_position(self, angle_cam_frame, net_cam_frame, CONFIDENCE_THRESHOLD):
@@ -88,7 +86,10 @@ class A(camera):
             #angles_y2s = angles_y2s[np.where(angles_indexes!=4)]
             #angles_scores = angles_scores[np.where(angles_indexes!=4)]
             #angles_indexes = angles_indexes[np.where(angles_indexes!=4)]
-            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
+            if not config.night_cast():
+                objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
+            else:
+                objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs_night, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
             #But use its refs
             #try:
             #    objs_x1s = np.append(objs_x1s, angles_x1s)
@@ -406,5 +407,7 @@ if __name__ == "__main__":
     filelist = glob.glob("../left/*.jpg")    #TODO : Feed A.py left data to get correct results
     for idx, filename in enumerate(filelist[:]):
         image_data = camera.get_image_data(filename)
+        CONFIDENCE_THRESHOLD = config.get_confidence()
         A_program.self_logic(image_data, CONFIDENCE_THRESHOLD)
+
 
