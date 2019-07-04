@@ -9,6 +9,13 @@
 *.log
 *.json
 
+*.cpp
+*.h
+*.hpp
+*.pro
+*.ui
+
+daylight
 *.pkl
 *.so
 *.rar

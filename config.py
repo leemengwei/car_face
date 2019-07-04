@@ -11,8 +11,11 @@
 _LIGHT_THRESHOLD = 20
 
 def night_cast():
-    with open("./daylight", 'r') as f:
-        light = int(f.readline())
+    try:
+        with open("./daylight", 'r') as f:
+            light = int(f.readline())
+    except:
+        light = 10
     if light>_LIGHT_THRESHOLD:
         NIGHT_CAST = True
     else:
