@@ -8,12 +8,12 @@
 #import skimage.io._plugins.matplotlib_plugin
 #skimage.io.use_plugin('pil', 'imread')   #这些都是编译exe所需，这里须显示调用pil的imread，而不是matplotlib的，因为我训练的时候dataloader里默认用的是pil的imread，和matplotlib的imread读取的数据分布不一样。
 
-_LIGHT_THRESHOLD = 1
+_LIGHT_THRESHOLD = 20
 
 def night_cast():
     with open("./daylight", 'r') as f:
         light = int(f.readline())
-    if light<_LIGHT_THRESHOLD:
+    if light>_LIGHT_THRESHOLD:
         NIGHT_CAST = True
     else:
         NIGHT_CAST = False
