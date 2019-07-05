@@ -4,7 +4,7 @@ import torch.distributed as dist
 from torch._utils import (_flatten_dense_tensors, _unflatten_dense_tensors,
                           _take_tensors)
 from mmcv.runner import OptimizerHook
-
+from IPython import embed
 
 def _allreduce_coalesced(tensors, world_size, bucket_size_mb=-1):
     if bucket_size_mb > 0:

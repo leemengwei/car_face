@@ -56,7 +56,7 @@ class A(camera):
         self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
         #use mmd now:
         #self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])  #will depricate in next version
-        self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_CONFIG, MMD_WEIGHTS)
+        self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_CONFIG_6, MMD_WEIGHTS_6)
         self.net_to_detect_objs_night = self.get_mmd_model_and_template(MMD_CONFIG_NIGHT, MMD_WEIGHTS_NIGHT)
         self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
         #put on gpu:
@@ -88,8 +88,10 @@ class A(camera):
             #angles_indexes = angles_indexes[np.where(angles_indexes!=4)]
             if not config.night_cast():
                 objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
+                classes = config.CLASSES_6
             else:
                 objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs_night, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
+                classes = config.CLASSES_4
             #But use its refs
             #try:
             #    objs_x1s = np.append(objs_x1s, angles_x1s)
@@ -102,7 +104,6 @@ class A(camera):
             #    print("COMPENSATING ERROR")
             #    pass
             print("This:", "index",objs_indexes, "score",objs_scores)
-            classes = config.CLASSES
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
                 heads_x1s = objs_x1s[np.where(objs_names=='head')]

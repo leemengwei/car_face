@@ -206,7 +206,7 @@ img_norm_cfg = dict(
     std=[58.395, 57.12, 57.375],
     to_rgb=True)
 data = dict(
-    imgs_per_gpu=3,
+    imgs_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
@@ -248,7 +248,7 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -272,6 +272,7 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/car_face'
 load_from = "coco_pretrained/coco_cascade_rcnn_hrnetv2_w32_fpn_4.pth"
+#load_from = None
 resume_from = None
 #resume_from = "./work_dirs/car_face/latest.pth"
 workflow = [('train', 1)]

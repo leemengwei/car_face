@@ -135,6 +135,7 @@ class CocoDistEvalRecallHook(DistEvalHook):
 class CocoDistEvalmAPHook(DistEvalHook):
 
     def evaluate(self, runner, results):
+        print("cocodistevalmaphook")
         tmp_file = osp.join(runner.work_dir, 'temp_0.json')
         results2json(self.dataset, results, tmp_file)
 

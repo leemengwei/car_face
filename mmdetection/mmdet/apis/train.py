@@ -155,13 +155,16 @@ def _dist_train(model, dataset, cfg, validate=False):
     if validate:
         val_dataset_cfg = cfg.data.val
         if isinstance(model.module, RPN):
+            print("RPN")
             # TODO: implement recall hooks for other datasets
             runner.register_hook(CocoDistEvalRecallHook(val_dataset_cfg))
         else:
             dataset_type = getattr(datasets, val_dataset_cfg.type)
             if issubclass(dataset_type, datasets.CocoDataset):
+                print("coco")
                 runner.register_hook(CocoDistEvalmAPHook(val_dataset_cfg))
             else:
+                print("not coco")
                 runner.register_hook(DistEvalmAPHook(val_dataset_cfg))
 
     if cfg.resume_from:
