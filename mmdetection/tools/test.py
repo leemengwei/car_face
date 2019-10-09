@@ -14,6 +14,8 @@ from mmdet.core import results2json, coco_eval
 from mmdet.datasets import build_dataloader, get_dataset
 from mmdet.models import build_detector
 
+from IPython import embed
+from torchviz import make_dot
 
 def single_gpu_test(model, data_loader, show=False):
     model.eval()
@@ -152,7 +154,16 @@ def main():
 
     # build the model and load checkpoint
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    load_checkpoint(model, args.checkpoint, map_location='cpu')
+    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+    # old versions did not save class info in checkpoints, this walkaround is
+    # for backward compatibility
+    if 'CLASSES' in checkpoint['meta']:
+        model.CLASSES = checkpoint['meta']['CLASSES']
+    else:
+        model.CLASSES = dataset.CLASSES
+    dataset.CLASSES = ("a", "b", "c")
+    model.CLASSES = ("a", "b", "c")
+    #embed()
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])

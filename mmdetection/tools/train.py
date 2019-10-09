@@ -9,7 +9,7 @@ from mmdet.apis import (train_detector, init_dist, get_root_logger,
                         set_random_seed)
 from mmdet.models import build_detector
 import torch
-
+from IPython import embed
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -82,6 +82,10 @@ def main():
             classes=train_dataset.CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = train_dataset.CLASSES
+
+    #Data Personalized:
+    model.CLASSES = ('two_slots_bricks_seg',)
+    #embed()
     train_detector(
         model,
         train_dataset,

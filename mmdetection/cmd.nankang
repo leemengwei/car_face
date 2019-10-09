@@ -1,0 +1,30 @@
+
+#Detection:
+
+./tools/dist_train.sh configs/nankang/cascade_rcnn_hrnetv2p_w32_20e.py 2 --validate
+
+python tools/test.py configs/nankang/cascade_rcnn_hrnetv2p_w32_20e.py work_dirs/nankang_det/latest.pth --out result.pkl --eval bbox --show
+
+
+
+
+
+
+
+
+#Mask
+
+./tools/dist_train.sh configs/nankang/cascade_mask_rcnn_r50_fpn_1x.py 2 --validate
+
+python tools/test.py configs/nankang/cascade_mask_rcnn_r50_fpn_1x.py work_dirs/nankang_seg/latest.pth --out result.pkl --eval segm --show
+
+
+
+
+
+python tools/analyze_logs.py plot_curve work_dirs/nankang_det/20190929_194931.log.json --keys bbox_mAP_50
+python tools/analyze_logs.py plot_curve work_dirs/nankang_det/20190929_194931.log.json --keys loss lr
+
+python tools/analyze_logs.py plot_curve work_dirs/nankang_seg/20190929_194844.log.json --keys bbox_mAP_50
+python tools/analyze_logs.py plot_curve work_dirs/nankang_seg/20190929_194844.log.json --keys loss lr
+

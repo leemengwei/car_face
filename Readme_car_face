@@ -1,3 +1,15 @@
+融合训练：
+CUDA_VISIBLE_DEVICES=1 python spatial_in_seat_train_and_test.py -EX=1 -BS=100 -E=1000 -V -R -RM=model_both_side_old/model_best.pt -DP=./spatial_data_both_side_finetunes/
+
+融合验证：
+
+融合测试：
+CUDA_VISIBLE_DEVICES=1 python spatial_in_seat_train_and_test.py -E=-1 -V -RM=model_both_side_old/model_best.pt -DP=./data_both_side_old/
+
+
+
+
+#编辑config文件
 
 #散乱图片：
 python seat_merge.py
@@ -7,4 +19,5 @@ python car_to_car_merge.py
 
 #并行逐车， 注意不可画图！！复现结果：
 python threads_start.py
+
 

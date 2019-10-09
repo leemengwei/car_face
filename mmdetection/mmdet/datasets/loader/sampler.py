@@ -135,7 +135,7 @@ class DistributedGroupSampler(Sampler):
                 indice += indice[:extra]
                 indices += indice
 
-        assert len(indices) == self.total_size
+        assert len(indices) == self.total_size, "%s to %s"%(len(indices), self.total_size)
 
         indices = [
             indices[j] for i in list(

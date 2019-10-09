@@ -264,7 +264,7 @@ class A(camera):
             if len(angle_x1)==1 and len(top_x1)==1:  #并且刚好标识物各有一个,运行神经网络
                 #生成输入矩阵 n×12维度， n是人头个数
                 inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
-                positions_peer_car = {}
+                positions_peer_side = {}
                 with no_grad():
                     for i in range(len(heads_x1s)):
                         head_pos = np.array([heads_x1s[i], heads_y1s[i], heads_x2s[i], heads_y2s[i]])
@@ -272,21 +272,21 @@ class A(camera):
                         position_probabilities, position = spatial_in_seat_train_and_test.frame_in_seat(self.net_spatial, inputs)
                         i = 0
                         #如果该位置已经坐人了：
-                        while position in positions_peer_car.keys():
+                        while position in positions_peer_side.keys():
                             i += 1
-                            if positions_peer_car[position][0,position-1] >= position_probabilities[0,position-1]:   #如果先前的结果比较确定
+                            if positions_peer_side[position][0,position-1] >= position_probabilities[0,position-1]:   #如果先前的结果比较确定
                                 position = (-position_probabilities).argsort()[0][i]+1   #则取一个新的信任位置给目前的结果。
                             else:          #如果目前的结果更为确定
-                                tmp_probabilities = positions_peer_car[position]   #把先前的概率序列取出
+                                tmp_probabilities = positions_peer_side[position]   #把先前的概率序列取出
                                 tmp_position = (-tmp_probabilities).argsort()[0][i]+1   #给一个第二信任的位置给之前的结果。
-                                positions_peer_car[position] = position_probabilities   #改掉之前的结果
+                                positions_peer_side[position] = position_probabilities   #改掉之前的结果
                                 position = tmp_position     #把之前的给成现在的，就好像恰好后得到这个量一样
                                 position_probabilities = tmp_probabilities   #把之前的给成现在的，就好像恰好后得到这个量一样
-                                #positions_peer_car[tmp_position] = tmp_probabilities   #更改先前的入座结果
-                        positions_peer_car[position] = position_probabilities   #只有当position不再出现过，才可以赋值进去
+                                #positions_peer_side[tmp_position] = tmp_probabilities   #更改先前的入座结果
+                        positions_peer_side[position] = position_probabilities   #只有当position不再出现过，才可以赋值进去
                 #Add in driver.
-                positions_peer_car[1]="666" if 1 not in positions_peer_car.keys() else positions_peer_car[1]
-                _result_ = list(positions_peer_car.keys())
+                positions_peer_side[1]="666" if 1 not in positions_peer_side.keys() else positions_peer_side[1]
+                _result_ = list(positions_peer_side.keys())
                 status = "Predicted, %s head, %s refs, case 3. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
                 return _result_, status
             elif len(angle_x1)==0 and len(top_x1)==0:   #没有任何标识物
@@ -301,13 +301,13 @@ class A(camera):
             else:
                 print("?????")   #之前已经强制就绪了两个标识物，要么都有要么都没有，不该出现这种情况。
                 sys.exit()
-    def ignore_5(self, positions_peer_car):
+    def ignore_5(self, positions_peer_side):
         move_to_seat = 3 if self.side == 'left' else 4
         try:
-            positions_peer_car[np.where(np.array(positions_peer_car)==5)[0][0]]=move_to_seat
+            positions_peer_side[np.where(np.array(positions_peer_side)==5)[0][0]]=move_to_seat
         except:
             pass
-        return positions_peer_car
+        return positions_peer_side
     def self_logic(self, image_data, CONFIDENCE_THRESHOLD):
         if image_data.dtype == np.uint8:   #If come from C
             print("Must be C running...")
@@ -330,15 +330,15 @@ class A(camera):
             #对人头的经验审查与修补：
             heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)
             #位置判别网络：
-            positions_peer_car, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
+            positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
             #注意：暂时忽略5位置！！！！！！！！！！！！！！！！！！！！！！！
-            #positions_peer_car = self.ignore_5(positions_peer_car)
+            #positions_peer_side = self.ignore_5(positions_peer_side)
             time_used = time.time() - start_time
         else:
             status = "Frame Skipped since (%s)"%frame_status
-            positions_peer_car = [0,]
+            positions_peer_side = [0,]
             time_used = time.time() - start_time
-        print("Net:", self.netname, "Time_used:", np.round(time_used, 4), "Judge_stauts:", status, "Positions_peer_frame_peer_side:************", positions_peer_car, "********")
+        print("Net:", self.netname, "Time_used:", np.round(time_used, 4), "Judge_stauts:", status, "Positions_peer_frame_peer_side:************", positions_peer_side, "********")
         #VISUALIZATION:
         if VISUALIZATION:
             #Plot1:
@@ -369,10 +369,10 @@ class A(camera):
             ax1.set_title("View of Camera %s, always keep running"%self.netname)
             ax1.axis('off')
             seats = np.zeros(shape=(1,5))
-            if positions_peer_car==[0]:
+            if positions_peer_side==[0]:
                 pass
             else:
-                seats[0, np.array(positions_peer_car)-1] = 1
+                seats[0, np.array(positions_peer_side)-1] = 1
             if UNVEIL:
                 #Plot2:
                 ax2 = plt.subplot(223)
@@ -393,7 +393,7 @@ class A(camera):
             plt.draw()
             plt.pause(0.001)
             input()
-        return [positions_peer_car, plt]
+        return [positions_peer_side, plt]
 
 if __name__ == "__main__":
     #parser = argparse.ArgumentParser(description = "Front A Net...")

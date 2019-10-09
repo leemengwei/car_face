@@ -1,18 +1,24 @@
 import argparse
 import subprocess
 import torch
+from torchviz import make_dot
+from IPython import embed
 
+import mmcv
+from mmdet.models import build_detector
+from mmcv.runner import load_checkpoint, get_dist_info
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Process a checkpoint to be published')
     parser.add_argument('in_file', help='input checkpoint filename')
     parser.add_argument('out_file', help='output checkpoint filename')
+    parser.add_argument('config', help='output checkpoint filename')
     args = parser.parse_args()
     return args
 
 
-def process_checkpoint(in_file, out_file):
+def process_checkpoint(in_file, out_file, config):
     checkpoint = torch.load(in_file, map_location='cpu')
     # remove optimizer for smaller file size
     if 'optimizer' in checkpoint:
@@ -27,7 +33,7 @@ def process_checkpoint(in_file, out_file):
 
 def main():
     args = parse_args()
-    process_checkpoint(args.in_file, args.out_file)
+    process_checkpoint(args.in_file, args.out_file, args.config)
 
 
 if __name__ == '__main__':

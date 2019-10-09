@@ -1,7 +1,7 @@
 *.jpg
-*.png
 *.jpeg
 *.bmp
+*.png
 *.csv
 *.txt
 *.pt
@@ -16,7 +16,9 @@
 *.ui
 
 daylight
+
 *.pkl
+*/*.pkl
 *.so
 *.rar
 *.zip
