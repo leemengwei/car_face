@@ -22,14 +22,16 @@ def night_cast():
     return NIGHT_CAST
 
 def get_confidence(): 
-    CONFIDENCE_THRESHOLD = 0.595
+    #CONFIDENCE_THRESHOLD = 0.63   #retrain with conf 0.53 to get 2.87 with old data.
+    CONFIDENCE_THRESHOLD = 0.14   #retrain with conf 0.14 to get 2.87 with old data more neg.
     if night_cast():
-        CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半
+        #CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半  #will depracate in next version
+        pass
     return CONFIDENCE_THRESHOLD
 
 #Just a workaround:
 ################Options for object detection:
-CLASSES_6 = ['angle', 'angle_r', 'top', 'top_r', 'head']    #+1背景类别
+#CLASSES_6 = ['angle', 'angle_r', 'top', 'top_r', 'head']  #+1背景类别 will depracate in next version
 CLASSES_4 = ['angle', 'top', 'head']    #加入晚上数据的模型已经不区分左右了
 
 ################Options for A and B:
@@ -41,19 +43,19 @@ UNVEIL               = True
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
 CONFIDENCE_THRESHOLD = get_confidence()   
 
-OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_full_data_465.pt"    #微调后
-SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_finetunes/model_best.pt"   #微调后
-
-#白天的模型（原模型，区分左右）
-MMD_CONFIG_6 = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e.py"
-MMD_WEIGHTS_6 = "object_detection_logs_data_both_side_finetunes/hrnet_latest.pth"
-#白天+晚上的模型（不区分左右）
-MMD_CONFIG_NIGHT = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py"
-MMD_WEIGHTS_NIGHT = "object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth"
+#定位模型
+SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_finetunes/model_best.pt"   
+#检测模型
+MMD_CONFIG = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py"
+MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_18_287_more_neg.pth"
+#白天+晚上的模型（不区分左右） will depracate in next version
+#MMD_CONFIG_NIGHT = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py" #will depracate in next version
+#MMD_WEIGHTS_NIGHT = "object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth"  #will depracate in next version
+#OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_full_data_465.pt"    #微调后
 
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-#PARALLEL_MODE = True
+PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 
@@ -62,7 +64,7 @@ if PARALLEL_MODE:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "../shanghai_data/2019-06-17-statics/"
+CAR_TO_CAR_DIR = "/mfs/home/limengwei/car_face/car_face/object_detection_data_back_seats/"
 #CAR_TO_CAR_DIR = "/home/user/list/"
 
 

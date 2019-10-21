@@ -9,7 +9,7 @@ from mmdet.apis import (train_detector, init_dist, get_root_logger,
                         set_random_seed)
 from mmdet.models import build_detector
 import torch
-from IPython import embed
+#from IPython import embed
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')

@@ -11,8 +11,10 @@ from IPython import embed
 from mmcv.runner import load_checkpoint
 from mmdet.models import build_detector
 from mmdet.apis import inference_detector, show_result,init_detector
+import make_graph
 
 id_to_label = {1:"angle",2:"angle_r",3:"top",4:"top_r",5:"head"}
+id_to_label = {1:"angle", 2:"top", 3:"head"}
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Predict on test images')
@@ -32,7 +34,9 @@ def predict():
     #model = build_detector(cfg.model, test_cfg=cfg.test_cfg)
     model = init_detector(args.cfg, args.weights, device='cuda:0')
     #_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
-    for image in tqdm(glob("/home/user/list/*/*.png")):
+    #for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_back_seats/*/*.png")):
+    for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_both_side_all_for_deploy/*/*.png")):
+    for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_both_side_back_seats/*/*.png")):
         img = mmcv.imread(image)
         filename = image.split("/")[-1]
         start = time.time()
@@ -55,9 +59,10 @@ def predict():
             cv2.putText(img,text,(int(x1),int(y1-2)),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,255,255))
             cv2.rectangle(img,(int(bbox[0]),int(bbox[1])),(int(bbox[2]),int(bbox[3])),(0,0,255),2)
         status = cv2.imwrite("outputs/%s"%filename,img)
+        #embed()
         cv2.imshow("img",img)
         cv2.waitKey(0)
-        
+       
 if __name__ == "__main__":
     predict()
 

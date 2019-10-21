@@ -40,31 +40,26 @@ import mmdetection.tools.test_fix as test_fix
 from mmdet.apis import init_detector
 
 class A(camera):
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, side):
         super(A, self).__init__()
         self.root_dir = root_dir
         if type(self.root_dir) is bytes:
             self.root_dir = self.root_dir.decode("utf-8")
-        self.netname = "A"
-        self.side = "left"
+        self.side = side
         #Init model:
-        #载入结构：
-        #self.net_to_detect_angles = model.resnet152(num_classes = len(config.CLASSES), pretrained=True, root_dir=self.root_dir)   #will depricate in next version
+        #Sptial net 载入结构：
         self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=config.NUM_OF_SEATS_PEER_CAR)
-        #载入参数：
-        #self.angles_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.OBJECT_DETECTION_MODEL))  #will depricate in next version
-        self.spatial_net_checkpoint_dict = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
-        #use mmd now:
-        #self.net_to_detect_angles.load_state_dict(self.angles_net_checkpoint_dict['model_state_dict'])  #will depricate in next version
-        self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_CONFIG_6, MMD_WEIGHTS_6)
-        self.net_to_detect_objs_night = self.get_mmd_model_and_template(MMD_CONFIG_NIGHT, MMD_WEIGHTS_NIGHT)
-        self.net_spatial.load_state_dict(self.spatial_net_checkpoint_dict['model_state_dict'])
-        #put on gpu:
-        #self.net_to_detect_angles.cuda().eval()
-        self.net_to_detect_objs.cuda().eval()
-        self.net_to_detect_objs_night.cuda().eval()
+        self.net_spatial_param = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
+        self.net_spatial.load_state_dict(self.net_spatial_param['model_state_dict'])
+        #Cascade net 载入结构:
+        self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_CONFIG, MMD_WEIGHTS)
+        #self.net_to_detect_objs_night = self.get_mmd_model_and_template(MMD_CONFIG_NIGHT, MMD_WEIGHTS_NIGHT)   #will depracate in next version
+        #On gpu:
         self.net_spatial.cuda().eval()
-        print("Program %s-Initialized."%self.netname)
+        self.net_to_detect_objs.cuda().eval()
+        #self.net_to_detect_objs_night.cuda().eval()
+        print("Side %s-Initialized."%self.side)
+
     def get_mmd_model_and_template(self, _mmd_config, _mmd_weights):
         cfg = mmcv.Config.fromfile(_mmd_config)
         # set cudnn_benchmark
@@ -75,34 +70,10 @@ class A(camera):
         model = init_detector(_mmd_config, _mmd_weights)
         return model
 
-    def get_objs_position(self, angle_cam_frame, net_cam_frame, CONFIDENCE_THRESHOLD):
+    def get_objs_position(self, net_cam_frame, CONFIDENCE_THRESHOLD):
+        classes = config.CLASSES_4
         with no_grad():
-            #Compensation
-            #angles_x1s, angles_y1s, angles_x2s, angles_y2s, angles_scores, angles_indexes, angles_elapsed_time = visualize.frame_detection(self.net_to_detect_angles, angle_cam_frame, confidence=0.8)
-            ##Don't use this head
-            #angles_x1s = angles_x1s[np.where(angles_indexes!=4)]
-            #angles_y1s = angles_y1s[np.where(angles_indexes!=4)]
-            #angles_x2s = angles_x2s[np.where(angles_indexes!=4)]
-            #angles_y2s = angles_y2s[np.where(angles_indexes!=4)]
-            #angles_scores = angles_scores[np.where(angles_indexes!=4)]
-            #angles_indexes = angles_indexes[np.where(angles_indexes!=4)]
-            if not config.night_cast():
-                objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
-                classes = config.CLASSES_6
-            else:
-                objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs_night, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
-                classes = config.CLASSES_4
-            #But use its refs
-            #try:
-            #    objs_x1s = np.append(objs_x1s, angles_x1s)
-            #    objs_y1s = np.append(objs_y1s, angles_y1s)
-            #    objs_x2s = np.append(objs_x2s, angles_x2s)
-            #    objs_y2s = np.append(objs_y2s, angles_y2s)
-            #    objs_scores = np.append(objs_scores, angles_scores)
-            #    objs_indexes = np.append(objs_indexes, angles_indexes).astype(int)
-            #except:
-            #    print("COMPENSATING ERROR")
-            #    pass
+            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
             print("This:", "index",objs_indexes, "score",objs_scores)
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
@@ -200,13 +171,11 @@ class A(camera):
             elif (len(angle_score)==0 and len(top_score)==0):   #对于两个标识物一个都没有的情况，则状态变为无效帧
                 frame_status = "NoRefs"
             else:   #或者都刚好有一个的情况,
-                #But twisted refs
                 if ((abs(top_x1+top_x2)/2 <= abs(angle_x1+angle_x2)/2) or (abs(top_y1+top_y2)/2 >= abs(angle_y1+angle_y2)/2)):
                     frame_status = "LeftSideMixedRefs"
-                #Or all okay
                 else:
                     pass    #或者都刚好有一个的情况，不处理。
-        else: #self.side is "right":
+        elif self.side is "right":
             if (len(angle_score)==1 and len(top_score)==0):
                 top_x1 = angle_x1-579.6467673760624
                 top_y1 = angle_y1-98.41134448029959
@@ -223,12 +192,21 @@ class A(camera):
             elif (len(angle_score)==0 and len(top_score)==0):  #对于两个标识物一个都没有的情况，则状态变为无效帧
                 frame_status = "NoRefs"
             else:   #或者都刚好有一个的情况,
-                #But twisted refs
                 if ((abs(top_x1+top_x2)/2 >= abs(angle_x1+angle_x2)/2) or (abs(top_y1+top_y2)/2 >= abs(angle_y1+angle_y2)/2)):
                     frame_status = "RightSideTwistedRefs"
-                #Or all okay
                 else:
-                    pass 
+                    pass
+        else:  #self.side is "back"
+           #给出足以区分前后相机不同定位空间的值：
+           angle_x1 = np.array([1])
+           angle_y1 = np.array([1])
+           angle_x2 = np.array([1])
+           angle_y2 = np.array([1])
+           top_x1  =  np.array([1])
+           top_y1  =  np.array([1])
+           top_x2  =  np.array([1])
+           top_y2  =  np.array([1])
+           pass
         return angle_x1, angle_y1, angle_x2, angle_y2, \
                top_x1, top_y1, top_x2, top_y2, \
                angle_score, top_score, angle_name, top_name, frame_status
@@ -313,39 +291,39 @@ class A(camera):
             print("Must be C running...")
             image_data = image_data.astype(float)/255
         #print(image_data.min(), image_data.mean(), image_data.max())
-        cam_frame = image_data
         #判定当前全局信号，GPU是否开始检测
         #Preprocess cam data:
-        angle_cam_frame = self.preprocess_cam_frame(cam_frame)
+        angle_cam_frame = self.preprocess_cam_frame(image_data)
         net_cam_frame = image_data*255
         #print(image_data.min(), image_data.mean(), image_data.max())
         start_time = time.time()
         #检测标识物和人头:
-        refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, \
-            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names \
-                =  self.get_objs_position(angle_cam_frame, net_cam_frame, CONFIDENCE_THRESHOLD)
+        refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLD)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
         if frame_status == "ok":
-            #对人头的经验审查与修补：
-            heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)
+            if self.side is not "back":
+                #对人头的经验审查与修补：
+                heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)
+            else:
+                pass   #后侧暂不做任何丢弃人头的处理
             #位置判别网络：
             positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
-            #注意：暂时忽略5位置！！！！！！！！！！！！！！！！！！！！！！！
+            #暂时忽略5位置
             #positions_peer_side = self.ignore_5(positions_peer_side)
             time_used = time.time() - start_time
         else:
             status = "Frame Skipped since (%s)"%frame_status
             positions_peer_side = [0,]
             time_used = time.time() - start_time
-        print("Net:", self.netname, "Time_used:", np.round(time_used, 4), "Judge_stauts:", status, "Positions_peer_frame_peer_side:************", positions_peer_side, "********")
+        print("Side:", self.side, "Time_used:", np.round(time_used, 3), "Judge_stauts:", status, "Positions_peer_frame_peer_side:************", positions_peer_side, "********")
         #VISUALIZATION:
         if VISUALIZATION:
             #Plot1:
             plt.clf()
             ax1 = plt.subplot(211)
-            ax1.imshow(cam_frame)
-            ax1.set_title("View of Camera %s, always keep running"%self.netname)
+            ax1.imshow(image_data)
+            ax1.set_title("View of Camera %s, always keep running"%self.side)
             ax1.axis('off')
             #plot1中画标识物：
             if UNVEIL:
@@ -366,7 +344,7 @@ class A(camera):
                 heads_rect = matplotlib.patches.Rectangle((heads_x1s[heads_idx], heads_y1s[heads_idx]), heads_x2s[heads_idx]-heads_x1s[heads_idx], heads_y2s[heads_idx]-heads_y1s[heads_idx], linewidth=1, edgecolor='green', facecolor='green', alpha=0.3)
                 ax1.text(heads_x1s[heads_idx], heads_y1s[heads_idx],"class:%s, score:%s"%(heads_names[heads_idx], np.round(heads_scores[heads_idx],2)), color=[0,1,0])
                 currentAxis.add_patch(heads_rect)
-            ax1.set_title("View of Camera %s, always keep running"%self.netname)
+            ax1.set_title("View of Camera %s, always keep running"%self.side)
             ax1.axis('off')
             seats = np.zeros(shape=(1,5))
             if positions_peer_side==[0]:
@@ -403,7 +381,7 @@ if __name__ == "__main__":
     #Initializing:
     print("Initializing front camera A...")
     root_dir = "/".join(os.getcwd().split('/')[:-1])
-    A_program = A(root_dir)
+    A_program = A(root_dir, "left")
     print("Real_time running...")
     filelist = glob.glob("../left/*.jpg")    #TODO : Feed A.py left data to get correct results
     for idx, filename in enumerate(filelist[:]):

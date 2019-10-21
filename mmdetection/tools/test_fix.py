@@ -19,15 +19,43 @@ from mmdet.apis import inference_detector, show_result,init_detector
 
 import sys,copy
 from IPython import embed
+import matplotlib.pyplot as plt
+import sklearn.metrics
 sys.path.append("/home/user/PersonDetection99/car_face/")
 
 def coco_eval_substitude(outputs, dataset):
     f1s = np.empty(shape=(0,len(dataset.cat_ids)))
-    for SCORE_THR in np.linspace(0,1,101):
+    precisions = np.array(np.tile(0,len(dataset.cat_ids)))
+    recalls = np.array(np.tile(1,len(dataset.cat_ids)))
+    axis_conf = np.linspace(0.01, 0.99, 99)
+    for SCORE_THR in axis_conf:
         for iou_threshold in [0.5]: #np.linspace(0.3,0.5,21):
             #print("Score threshold:%s, iou_threshold:%s"%(SCORE_THR, iou_threshold))
-            f1s = np.vstack((f1s, my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold)))
-    print("Please set score thr to %s, to get max performance of %s"%(np.linspace(0,1,101)[f1s[:,-1].argmax()], f1s[:,-1].max()), f1s[f1s[:,-1].argmax()])
+            f1, precision, recall = my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold)
+            f1s = np.vstack((f1s, f1))
+            precisions = np.vstack((precisions, precision))
+            recalls = np.vstack((recalls, recall))
+    most_confident = np.where(f1s.sum(axis=1)==f1s.sum(axis=1).max())[0][-1]
+    print("***Please set score thr to %s, to get comprehensive performance of %s"%(axis_conf[most_confident], f1s[most_confident]))
+    #model selection:
+    precisions = np.vstack((precisions, np.tile(1,len(dataset.cat_ids))))
+    recalls = np.vstack((recalls, np.tile(0,len(dataset.cat_ids))))
+    for i in range(f1s.shape[1]):
+        plt.scatter(precisions[:,i], recalls[:,i], label=i)
+        plt.title("PR-curve")
+    plt.legend()
+    plt.show()
+    AUC_area = 0
+    for i in range(len(dataset.cat_ids)):
+        #must sort to motonic..... alright...
+        _tmp1_, _tmp2_ = precisions[:,i], recalls[:,i]
+        seq = _tmp1_.argsort()
+        tmp_AUC = sklearn.metrics.auc(_tmp1_[seq], _tmp2_[seq])
+        AUC_area = AUC_area + tmp_AUC
+        print("AUC performance on %s: %s"%(i, tmp_AUC))
+    print("***Total AUC:", AUC_area)
+    #embed()
+    return AUC_area
 
 def compute_overlap(a, b):
     """
@@ -108,8 +136,8 @@ def my_csv_eval(all_detections, dataset, SCORE_THR, iou_threshold):
     counters = {}
     average_precisions = {}
     f1_scores = {}
-    recalling = {}
-    precising = {}
+    recalls = {}
+    precisions = {}
     for label in dataset.cat_ids:
         false_positives = np.zeros((0,))
         true_positives  = np.zeros((0,))
@@ -146,8 +174,8 @@ def my_csv_eval(all_detections, dataset, SCORE_THR, iou_threshold):
             counters[dataset.cat2label[label]] = 0
             average_precisions[dataset.cat2label[label]] = 0
             f1_scores[dataset.cat2label[label]] = 0
-            recalling[dataset.cat2label[label]] = 0
-            precising[dataset.cat2label[label]] = 0
+            recalls[dataset.cat2label[label]] = 0
+            precisions[dataset.cat2label[label]] = 0
             continue
 
         # sort by score
@@ -166,14 +194,14 @@ def my_csv_eval(all_detections, dataset, SCORE_THR, iou_threshold):
         else:
             precision_single = true_positives[-1]/(true_positives[-1]+false_positives[-1])
             recall_single = true_positives[-1]/num_annotations
-        precising[dataset.cat2label[label]] = np.round(precision_single,3)
-        recalling[dataset.cat2label[label]] = np.round(recall_single,3)
         # compute f1 score by LMW:
         if recall_single+precision_single!=0:
             f1_score = (2*recall_single*precision_single)/(recall_single+precision_single)
         else:
             f1_score = 0
         f1_scores[dataset.cat2label[label]] = np.round(f1_score,3)
+        precisions[dataset.cat2label[label]] = np.round(precision_single,3)
+        recalls[dataset.cat2label[label]] = np.round(recall_single,3)
 
         # compute recall and precision
         recall    = true_positives / num_annotations
@@ -187,10 +215,10 @@ def my_csv_eval(all_detections, dataset, SCORE_THR, iou_threshold):
     #for label in range(generator.num_classes()):
     #    label_name = dataset.cat2label[label]
     #    print('{}: {}'.format(label_name, average_precisions[label][0]))
-    #我自己的recalling和他用area算得一样，这里借用原作者的，只为顺便显示一下“多少个”。
+    #我自己的recalls和他用area算得一样，这里借用原作者的，只为顺便显示一下“多少个”。
     #print("Counters:", counters)
-    #print("Precising:", precising, "\nRecalling:", average_precisions, "\nF1_at_this_conf:", f1_scores, np.array(list(f1_scores.values())).sum())
-    return np.array(list(f1_scores.values()))
+    #print("Precising:", precisions, "\nRecalling:", average_precisions, "\nF1_at_this_conf:", f1_scores, np.array(list(f1_scores.values())).sum())
+    return np.array(list(f1_scores.values())), np.array(list(precisions.values())), np.array(list(recalls.values()))
 
 def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
     print("Using confidence score:", CONFIDENCE_THRESHOLD)
@@ -224,11 +252,10 @@ def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
         scores = np.hstack((scores, threshold))
         label_names.append(label)
     names = ["angle", "top", "head", " ", " "]
-    print(">>>>>>>>>>>>MMD>>>>>>>>>Details:")
     print(label_names, scores)
     return x1s,y1s,x2s,y2s, scores,label_names, elapsed_time
 
-def single_gpu_test(model, data_loader, show=False):
+def single_gpu_test(model, data_loader, SCORE_THR, show=False):
     model.eval()
     results = []
     dataset = data_loader.dataset
@@ -241,7 +268,10 @@ def single_gpu_test(model, data_loader, show=False):
         results.append(result)
 
         if show:
-            model.module.show_result(data, result, dataset.img_norm_cfg, score_thr=SCORE_THR)   #score_thr is here, hidden
+            if SCORE_THR is not None:
+                model.module.show_result(data, result, dataset.img_norm_cfg, score_thr=SCORE_THR)   #score_thr is here, hidden
+            else:
+                model.module.show_result(data, result, dataset.img_norm_cfg)   #score_thr is here, hidden
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -339,6 +369,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    SCORE_THR = None
 
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
@@ -376,9 +407,10 @@ def main():
     else:
         model.CLASSES = dataset.CLASSES
     model.CLASSES = ("angle","top","head")
+    #embed()
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader, args.show)
+        outputs = single_gpu_test(model, data_loader, SCORE_THR, args.show)
     else:
         model = MMDistributedDataParallel(model.cuda())
         outputs = multi_gpu_test(model, data_loader, args.tmpdir)

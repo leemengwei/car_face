@@ -207,14 +207,12 @@ img_norm_cfg = dict(
     to_rgb=True)
 data = dict(
     imgs_per_gpu=2,
-    workers_per_gpu=4,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_train2017_aug_4.json",
-        #ann_file=data_root+"instances_val2017_4_tiny.json",
-        img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_aug_here/images/train2017/",
-        #img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_here/images/val2017/",
-        img_scale=[(1120, 630),(1120,540),(960,630),(960,540)],
+        ann_file=data_root+"instances_all.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_train/",
+        img_scale=[(960,540), (960*1.1, 540*1.1, 960*1.2, 540*1.2)],
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0.5,
@@ -223,8 +221,8 @@ data = dict(
         with_label=True),
     val=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_val2017_4.json",
-        img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_here/images/val2017/",
+        ann_file=data_root+"instances_all_val.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_val/",
         img_scale=(960, 540),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -234,13 +232,11 @@ data = dict(
         with_label=True),
     test=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_val2017_4.json",
-        #ann_file=data_root+"instances_train2017_aug_4.json",
-        img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_here/images/val2017/",
-        #img_prefix=data_root+"object_detection_data_both_side_finetunes/generate_coco/cocos_aug_here/images/train2017/",
-        #img_scale=[(1200, 800),(1200,600),(1200,400),(1200,1000)],
+        ann_file=data_root+"instances_all_val.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_val/",
+        #ann_file=data_root+"instances_val2017_4.json",
+        #img_prefix=data_root+"object_detection_data_both_side_finetunes/val_images/",
         img_scale=(960, 540),
-        #img_scale=(1120, 630),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
@@ -248,15 +244,15 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0000)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=10000,
-    warmup_ratio=1.0 / 4,
-    step=[2, 6, 10])
+    warmup_iters=3000,
+    warmup_ratio=1.0 / 5,
+    step=[600, 1200, 1800, 2400, 3000])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -267,12 +263,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 30
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/car_face'
+work_dir = './work_dirs/car_face_retrain/'
 load_from = "coco_pretrained/coco_cascade_rcnn_hrnetv2_w32_fpn_4.pth"
-#load_from = None
 resume_from = None
 #resume_from = "./work_dirs/car_face/latest.pth"
 workflow = [('train', 1)]

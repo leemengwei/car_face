@@ -8,6 +8,9 @@
 *.pth
 *.log
 *.json
+*.json_corrupt
+*.gv
+*.pdf
 
 *.cpp
 *.h

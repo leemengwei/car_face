@@ -32,6 +32,8 @@ class RPNHead(AnchorHead):
         x = F.relu(x, inplace=True)
         rpn_cls_score = self.rpn_cls(x)
         rpn_bbox_pred = self.rpn_reg(x)
+        #from IPython import embed
+        #embed()
         return rpn_cls_score, rpn_bbox_pred
 
     def loss(self,
