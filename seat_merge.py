@@ -7,7 +7,7 @@ import argparse
 import sys, os
 from camera import camera
 import front_position_algorithm_A as A
-import side_position_algorithm_B as B
+#import side_position_algorithm_B as B  #will depracate in next version
 import threading
 import glob
 import time

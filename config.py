@@ -55,7 +55,7 @@ MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_18_287
 
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-PARALLEL_MODE = True
+#PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 

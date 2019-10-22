@@ -30,3 +30,5 @@ daylight
 *.o
 *.pyc
 __pycache__
+
+*.egg

@@ -6,7 +6,7 @@ import argparse
 import sys, os
 from camera import camera
 import front_position_algorithm_A as A
-import side_position_algorithm_B as B
+#import side_position_algorithm_B as B  #will depracate in next version
 import threading
 import glob
 import time
@@ -24,16 +24,13 @@ if __name__ == "__main__":
     #A:
     print("Initializing front camera A...")
     root_dir = "/".join(os.getcwd().split('/'))
-    A_program = A.A(root_dir)
+    A_program = A.A(root_dir, "left")
     #B:
     print("Initializing front camera B...")
-    B_program = B.B(root_dir)
-    #创建线程
-    #thread_A = Thread_A()
-    #thread_B = Thread_B()
-    #开启线程
-    #thread_A.start()
-    #thread_B.start()
+    B_program = A.A(root_dir, "right")
+    #C:
+    print("Initializing front camera C...")
+    C_program = A.A(root_dir, "back")
 
     car_to_car_dir = config.CAR_TO_CAR_DIR
     cars = glob.glob(car_to_car_dir+"/*")
@@ -49,8 +46,9 @@ if __name__ == "__main__":
         print("\nNEW PIC" ,idx, "of", len(cars), car)
         images_both_side = glob.glob(car+"/*.png")
         images_both_side.sort()
-        images_left = images_both_side[:int(len(images_both_side)/2)]
-        images_right = images_both_side[int(len(images_both_side)/2):]
+        images_left = images_both_side[:int((len(images_both_side)-2)/2)]
+        images_right = images_both_side[int((len(images_both_side)-2)/2):]
+        images_back = images_both_side[-2:]
         #A_filelist = glob.glob("/home/user/left/*.jpg")
         #B_filelist = glob.glob("/home/user/right/*.jpg")
         preds = []
@@ -66,6 +64,12 @@ if __name__ == "__main__":
             B_image_data = camera.get_image_data(image)
             B_pos, B_plt = B_program.self_logic(B_image_data, CONFIDENCE_THRESHOLD)
             preds += B_pos
+        for image in images_back:
+            if config.VISUALIZATION:
+                plt.figure()
+            C_image_data = camera.get_image_data(image)
+            C_pos, C_plt = C_program.self_logic(C_image_data, CONFIDENCE_THRESHOLD)
+            preds += C_pos
         car_result_union = seat_merge.seat_merge_all(preds, method = "union")
         car_result_vote = seat_merge.seat_merge_all(preds, method = "vote")
         car_result_label = list(set(np.array(os.popen("cat %s/*.json|grep head|grep label|cut -c 21|sort|uniq"%car.replace(' ','\ ')).read().split()).astype(int)))

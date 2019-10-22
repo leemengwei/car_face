@@ -108,6 +108,29 @@ class A(camera):
                heads_x1s, heads_y1s, \
                heads_x2s, heads_y2s, \
                heads_scores, heads_names
+
+    def get_refs_for_back(self):
+        try:
+            angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 =list(np.loadtxt("./history_refs"))
+            angle_x1 = np.array([-angle_x1])
+            angle_y1 = np.array([-angle_y1])
+            angle_x2 = np.array([-angle_x2])
+            angle_y2 = np.array([-angle_y2])
+            top_x1 = np.array([-top_x1])
+            top_y1 = np.array([-top_y1])
+            top_x2 = np.array([-top_x2])
+            top_y2 = np.array([-top_y2])
+        except:
+            angle_x1 = np.array([])
+            angle_y1 = np.array([])
+            angle_x2 = np.array([])
+            angle_y2 = np.array([])
+            top_x1 = np.array([])
+            top_y1 = np.array([])
+            top_x2 = np.array([])
+            top_y2 = np.array([])
+        return angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2
+
     def check_refs_outputs(self, refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names):
         frame_status = "ok"
         #这里考虑单侧的相机，无论是否看到了另一侧的angle或top，都不管，只处理本侧的angle和top
@@ -197,16 +220,14 @@ class A(camera):
                 else:
                     pass
         else:  #self.side is "back"
-           #给出足以区分前后相机不同定位空间的值：
-           angle_x1 = np.array([1])
-           angle_y1 = np.array([1])
-           angle_x2 = np.array([1])
-           angle_y2 = np.array([1])
-           top_x1  =  np.array([1])
-           top_y1  =  np.array([1])
-           top_x2  =  np.array([1])
-           top_y2  =  np.array([1])
-           pass
+           #本帧图像给出的top和angle都可直接舍弃（就不该有）
+           #读取文件内容得到磁盘记录的标识物位置，并给出足以区分前后相机不同定位空间的值（如取负操作等）：
+           angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 = self.get_refs_for_back()
+           #判断历史的一些信息：取首个帧，故长度不会超过1
+           if len(angle_x1)==1 and len(top_x1)==1:
+               pass  #frame_status is still ok
+           else:
+               frame_status = "BackRefsNotEnough"
         return angle_x1, angle_y1, angle_x2, angle_y2, \
                top_x1, top_y1, top_x2, top_y2, \
                angle_score, top_score, angle_name, top_name, frame_status
@@ -286,7 +307,7 @@ class A(camera):
         except:
             pass
         return positions_peer_side
-    def self_logic(self, image_data, CONFIDENCE_THRESHOLD):
+    def self_logic(self, image_data, CONFIDENCE_THRESHOLD, time_num = None):
         if image_data.dtype == np.uint8:   #If come from C
             print("Must be C running...")
             image_data = image_data.astype(float)/255
@@ -301,12 +322,16 @@ class A(camera):
         refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLD)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
+        if time_num == 1:
+            refs_info = np.array([list(angle_x1), list(angle_y1), list(angle_x2), list(angle_y2), list(top_x1), list(top_y1), list(top_x2), list(top_y2)])
+            np.savetxt("./history_refs", refs_info.reshape(-1))
         if frame_status == "ok":
             if self.side is not "back":
                 #对人头的经验审查与修补：
                 heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)
             else:
-                pass   #后侧暂不做任何丢弃人头的处理
+                #后侧暂不做任何丢弃人头的处理, 注意后侧图像无标识位问题，使用前侧（首帧）标识位。
+                pass
             #位置判别网络：
             positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
             #暂时忽略5位置

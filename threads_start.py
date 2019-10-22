@@ -4,7 +4,7 @@ import threading
 import time,os,sys
 import glob
 import front_position_algorithm_A as A
-import side_position_algorithm_B as B
+#import side_position_algorithm_B as B  #will depracate in next version
 from camera import camera
 import seat_merge
 from IPython import embed
@@ -12,23 +12,24 @@ class Worker():
     def __init__(self, side):
         self.root_dir = os.getcwd()
         self.program = A.A(self.root_dir, side)    #With side annoted here.
-    def do(self, image_data, CONFIDENCE_THRESHOLD):
-        positions, plt = self.program.self_logic(image_data, CONFIDENCE_THRESHOLD)
+    def do(self, image_data, CONFIDENCE_THRESHOLD, time_num):
+        positions, plt = self.program.self_logic(image_data, CONFIDENCE_THRESHOLD, time_num)
         return positions
 
 class thread_manager(threading.Thread):
-    def __init__(self, worker, CONFIDENCE_THRESHOLD):
+    def __init__(self, worker, CONFIDENCE_THRESHOLD, time_num):
         threading.Thread.__init__(self)
         self.worker = worker
         self.image_data = None
         self.positions = None
         self.CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD
+        self.time_num = time_num
     def set_values(self, image_data):
         self.image_data = image_data
     def run(self):
         if self.image_data is None:
             raise NotImplementedError
-        self.positions = self.worker.do(self.image_data, self.CONFIDENCE_THRESHOLD)
+        self.positions = self.worker.do(self.image_data, self.CONFIDENCE_THRESHOLD, self.time_num)
 
 def python_get_images(image_idx, filelist):
     image_name1 = filelist[image_idx]
@@ -84,6 +85,8 @@ def algorithm_detection_and_merge(workers, \
                      image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8):
     #INTERFACE WITH C
     #embed()
+    if os.path.exists("./history_refs"):
+        os.remove('./history_refs')
     #image_data1 = image_data2 = image_data3 = image_data4 = image_data5 = image_data6 = camera.get_image_data("/home/user/Data1/2019-05-12 16-53-48/2019-05-12 16-53-49-520.png")
     workers_list = workers.workers_list
     sys.stdout.flush()
@@ -93,33 +96,31 @@ def algorithm_detection_and_merge(workers, \
         start_time = time.time()
         pos = []
         #GPU 显存不够，2个2个并行, 1/4 2/5 3/6 4/8
-        _thread1 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD)
+        _thread1 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD, 1)
         _thread1.set_values(image_data1)
         _thread1.start()
-        _thread4 = thread_manager(workers_list[1], CONFIDENCE_THRESHOLD)
+        _thread4 = thread_manager(workers_list[1], CONFIDENCE_THRESHOLD, 1)
         _thread4.set_values(image_data4)
         _thread4.start()
         #第二组
-        _thread2 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD)
+        _thread2 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD, 2)
         _thread2.set_values(image_data2)
         _thread2.start()
-        _thread5 = thread_manager(workers_list[1], CONFIDENCE_THRESHOLD)
+        _thread5 = thread_manager(workers_list[1], CONFIDENCE_THRESHOLD, 2)
         _thread5.set_values(image_data5)
         _thread5.start()
         #第三组
-        _thread3 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD)
+        _thread3 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD, 3)
         _thread3.set_values(image_data3)
         _thread3.start()
-        _thread6 = thread_manager(workers_list[1], CONFIDENCE_THRESHOLD)
+        _thread6 = thread_manager(workers_list[1], CONFIDENCE_THRESHOLD, 3)
         _thread6.set_values(image_data6)
         _thread6.start()
         #第四组
-        _thread7 = thread_manager(workers_list[2], CONFIDENCE_THRESHOLD)
+        _thread7 = thread_manager(workers_list[2], CONFIDENCE_THRESHOLD, 1)
         _thread7.set_values(image_data7)
-        _thread7.start()
-        _thread8 = thread_manager(workers_list[3], CONFIDENCE_THRESHOLD)
+        _thread8 = thread_manager(workers_list[3], CONFIDENCE_THRESHOLD, 1)
         _thread8.set_values(image_data8)
-        _thread8.start()
 
         _thread1.join()
         _thread2.join()
@@ -127,8 +128,14 @@ def algorithm_detection_and_merge(workers, \
         _thread4.join()
         _thread5.join()
         _thread6.join()
+        print("Fronts finished, now back...")
+        #sys.exit()
+         #后侧进程需要用首帧的结果
+        _thread7.start()
+        _thread8.start()
         _thread7.join()
         _thread8.join()
+        
         pos1 = _thread1.positions
         pos2 = _thread2.positions
         pos3 = _thread3.positions
@@ -144,8 +151,10 @@ def algorithm_detection_and_merge(workers, \
         print("Running on serial mode...")
         start_time = time.time()
         pos = []
+        i = 1
         for worker in workers_list:
-            pos += worker.do(image_data1, CONFIDENCE_THRESHOLD)
+            pos += worker.do(image_data1, CONFIDENCE_THRESHOLD, time_num=int(i))
+            i += 0.5
         predictions_merged = seat_merge.seat_merge_all(pos, method=config.MERGE_METHOD)
     print("TIME", time.time()-start_time, predictions_merged)
     sys.stdout.flush()
