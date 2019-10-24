@@ -85,8 +85,10 @@ def algorithm_detection_and_merge(workers, \
                      image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8):
     #INTERFACE WITH C
     #embed()
-    if os.path.exists("./history_refs"):
-        os.remove('./history_refs')
+    if os.path.exists("./history_refs_right"):
+        os.remove('./history_refs_right')
+    if os.path.exists("./history_refs_left"):
+        os.remove('./history_refs_left')
     #image_data1 = image_data2 = image_data3 = image_data4 = image_data5 = image_data6 = camera.get_image_data("/home/user/Data1/2019-05-12 16-53-48/2019-05-12 16-53-49-520.png")
     workers_list = workers.workers_list
     sys.stdout.flush()

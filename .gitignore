@@ -11,6 +11,7 @@
 *.json_corrupt
 *.gv
 *.pdf
+*.history_ref_*
 
 *.cpp
 *.h

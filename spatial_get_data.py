@@ -1,3 +1,6 @@
+from collections import Counter
+import time
+import os,sys
 import pandas as pd
 import torch
 import numpy as np
@@ -14,10 +17,7 @@ def xy_order_correction(inputs, small_cols, big_cols):
         inputs[col2][wrong_rows] = tmp
     return inputs
 
-def get_ref_and_heads(data_path, args):
-    files_list = glob("%s*.json"%data_path)
-    ref_names = ['angle', 'top', 'angle_r', 'top_r']   #TODO：参考物的名称
-    head_names = ["head1", "head2", "head3", "head4", "head5"]      #TODO: 类别必须形如 head1 head2 等，其中 1 2 表示固定的位置，不允许改变
+def generate_for_six_image_folder(files_list, head_names, ref_names):
     paths = []
     inputs = np.empty(shape=(0, int(4*2+4+1)))   # ref_pos + head_pos + head_label
     for files in files_list:
@@ -30,7 +30,6 @@ def get_ref_and_heads(data_path, args):
         #First do counting, on all kinds of heads in detection list:
         num_of_refs = 0
         num_of_heads = 0
-        #embed()
         for i in data['shapes']:
             if i['label'] in head_names:
                 num_of_heads += 1
@@ -38,8 +37,8 @@ def get_ref_and_heads(data_path, args):
                 num_of_refs += 1
             else:
                 print("Unkown type %s"%i['label'])
-                import sys
-                sys.exit(0)
+                if i['label']=='head6':
+                    sys.exit()
         if num_of_refs != 2:
             print("In file %s, Findding %s refs! Supposing two and only two!"%(files, num_of_refs))
             continue
@@ -47,7 +46,7 @@ def get_ref_and_heads(data_path, args):
             print("In file %s, Findding %s heads! Supposing at least one head(dirver)!"%(files, num_of_heads))
             continue
         else:
-            print("In file %s, Findding %s heads and %s refs, good"%(files, num_of_heads, num_of_refs))
+            print("In file %s, Findding %s heads and %s refs, a good sample"%(files, num_of_heads, num_of_refs))
         #开始形成数据：
         ref_positions = np.array([])
         for ref_name in ref_names:
@@ -66,6 +65,118 @@ def get_ref_and_heads(data_path, args):
             else:
                 pass
         inputs = np.vstack((inputs, ref_and_head_position))
+    return inputs, paths
+
+def generate_for_eight_image_folder(files_list, head_names, ref_names):
+    paths = []
+    inputs = np.empty(shape=(0, int(4*2+4+1)))   # ref_pos + head_pos + head_label
+    for files in files_list:
+        front, back = files[0], files[1]
+        #within one image:
+        data = {'shapes':[]} 
+        with open(front) as f:
+            data_front = json.load(f)
+            for idx,i in enumerate(data_front['shapes']):
+                if i['label'] in ref_names: 
+                    data['shapes'].append(i) 
+        with open(back) as f:
+            data_back = json.load(f)
+            for idx,i in enumerate(data_back['shapes']):
+                if i['label'] in head_names: 
+                    data['shapes'].append(i)
+        if len(data['shapes'])<=0:
+            print("Nothing founded, continue")
+            continue
+        #First do counting, on all kinds of heads in detection list:
+        num_of_refs = 0
+        num_of_heads = 0
+        for i in data['shapes']:
+            if i['label'] in head_names:
+                num_of_heads += 1
+            elif i['label'] in ref_names:
+                num_of_refs += 1
+            else:
+                print("Unkown type %s"%i['label'])
+                if i['label']=='head6':
+                    sys.exit()
+        if num_of_refs != 2:
+            print("In file %s, Findding %s refs! Supposing two and only two!"%(files, num_of_refs))
+            continue
+        elif num_of_heads < 1:
+            print("In file %s, Findding %s heads! Supposing at least one head(dirver)!"%(files, num_of_heads))
+            continue
+        else:
+            print("In file %s, Findding %s heads and %s refs, a good sample"%(files, num_of_heads, num_of_refs))
+        #开始形成数据：
+        ref_positions = np.array([])
+        for ref_name in ref_names:
+            for i in data['shapes']:
+                if i['label'] == ref_name:
+                    ref_positions = np.hstack((ref_positions, np.array(i['points']).reshape(-1)))
+        #After check, now we get data peer image:
+        #ref_and_head_position = np.hstack((np.tile(ref_positions, (num_of_heads,1)), np.tile([0,0,0,0, 0], (num_of_heads,1))))
+        ref_and_head_position = np.hstack((np.tile(-ref_positions, (num_of_heads,1)), np.tile([0,0,0,0, 0], (num_of_heads,1))))   #使用取负来标注跨图像的信息
+        counter = 0
+        for i in data['shapes']:
+            if i['label'] in head_names:
+                ref_and_head_position[counter][4*2:-1] = np.array(i['points']).reshape(-1)
+                ref_and_head_position[counter][-1] = int(i['label'][-1])
+                paths.append(files)
+                counter += 1
+            else:
+                pass
+        inputs = np.vstack((inputs, ref_and_head_position))
+    return inputs, paths
+
+def get_ref_and_heads(data_path, args):
+    image_folders = glob("%s/*"%data_path)
+    eight_image_folders = []
+    eight_image_files_list = []
+    six_image_folders = []
+    six_image_files_list = []
+    for i in image_folders: 
+        num_of_pngs = glob(i+"/*.png") 
+        if len(num_of_pngs)==8: 
+            eight_image_folders.append(i)
+    six_image_folders = set(image_folders)   # - set(eight_image_folders)  #不用减8个的了，都可以用
+    #6图的都可以用：
+    for i in six_image_folders: 
+        tmp = glob(i+"/*.json")
+        if len(tmp)>0:
+            six_image_files_list += tmp
+    #8图的要做特殊跨图处理：
+    for i in eight_image_folders: 
+        tmp = glob(i+"/*.png")
+        tmp.sort()
+        back_idx = []
+        front_idx = []
+        for idx,j in enumerate(tmp):
+            if j.find("BACK-")>0: 
+                back_idx.append(idx)
+            else:
+                front_idx.append(idx)
+        #孙东方存图命名顺序： （sort后） 左左左、右右右，右左（以前进方向为例）
+        back_right = tmp[back_idx[0]].replace(".png",".json")
+        back_left = tmp[back_idx[1]].replace(".png",".json")
+        first_left = tmp[front_idx[0]].replace(".png",".json")
+        first_right = tmp[front_idx[3]].replace(".png",".json")
+
+        if os.path.exists(first_left) and os.path.exists(back_left):
+            eight_image_files_list.append([first_left, back_left])
+        if os.path.exists(first_right) and os.path.exists(back_right):
+            eight_image_files_list.append([first_right, back_right])
+
+    ref_names = ['angle', 'top', 'angle_r', 'top_r']   #TODO：参考物的名称
+    head_names = ["head1", "head2", "head3", "head4", "head5" ]      #TODO: 类别必须形如 head1 head2 等，其中 1 2 表示固定的位置，不允许改变
+
+    #六张图、八张图将根据不同的策略尝试生成数据：
+    print("Generating data for eight image foler...")
+    time.sleep(0.5)
+    inputs, paths = generate_for_eight_image_folder(eight_image_files_list, head_names, ref_names)
+    print("Generating data for six image foler...")
+    time.sleep(0.5)
+    inputs, paths = generate_for_six_image_folder(six_image_files_list, head_names, ref_names)
+
     #Put into dataframe with name
     inputs = pd.DataFrame(inputs, index=None)
     inputs.columns = ["ref1_x1", "ref1_y1", "ref1_x2", "ref1_y2", \

@@ -1,5 +1,6 @@
 #SPA net
 python spatial_in_seat_train_and_test.py -EX=1 -BS=100 -E=1000 -V -R -RM=spatial_model_both_side_finetunes/model_best.pt -DP=./spatial_data_both_side_finetunes/
+python spatial_in_seat_train_and_test.py -EX=1 -BS=100 -E=1000 -V -DP=./spatial_data_front_and_back/
 
 
 
@@ -17,7 +18,7 @@ cp generate_coco/cocos_here/annotations/instances_val2017.json ../instances_val2
 
 #分布式训练
 ./tools/dist_train.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py 2 --validate
-./tools/dist_train.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_back_seat.py 2 --validate
+./tools/dist_train.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py 2 --validate
 
 
 #With AUC and best conf:
