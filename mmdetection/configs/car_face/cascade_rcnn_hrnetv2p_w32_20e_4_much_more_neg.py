@@ -123,7 +123,7 @@ train_cfg = dict(
         sampler=dict(
             type='RandomSampler',
             num=256,
-            pos_fraction=0.5,
+            pos_fraction=0.05,
             neg_pos_ub=-1,
             add_gt_as_proposals=False),
         allowed_border=0,
@@ -147,7 +147,7 @@ train_cfg = dict(
             sampler=dict(
                 type='RandomSampler',
                 num=512,
-                pos_fraction=0.25,
+                pos_fraction=0.01,
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
@@ -162,7 +162,7 @@ train_cfg = dict(
             sampler=dict(
                 type='RandomSampler',
                 num=512,
-                pos_fraction=0.25,
+                pos_fraction=0.01,
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
@@ -177,7 +177,7 @@ train_cfg = dict(
             sampler=dict(
                 type='RandomSampler',
                 num=512,
-                pos_fraction=0.25,
+                pos_fraction=0.01,
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
@@ -194,6 +194,7 @@ test_cfg = dict(
         min_bbox_size=0),
     rcnn=dict(
         score_thr=0.05,
+        #nms=dict(type='nms', iou_thr=0.5),
         nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05),
         max_per_img=100),
     #bbox_vote=dict(enable=True, vote_th=0.9),
@@ -206,7 +207,7 @@ img_norm_cfg = dict(
     std=[58.395, 57.12, 57.375],
     to_rgb=True)
 data = dict(
-    imgs_per_gpu=2,
+    imgs_per_gpu=3,
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
@@ -263,10 +264,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 30
+total_epochs = 50
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/car_face_retrain/'
+work_dir = './work_dirs/car_face_retrain_much_more_negative/'
 load_from = "coco_pretrained/coco_cascade_rcnn_hrnetv2_w32_fpn_4.pth"
 resume_from = None
 #resume_from = "./work_dirs/car_face/latest.pth"

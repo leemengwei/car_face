@@ -33,3 +33,5 @@ daylight
 __pycache__
 
 *.egg
+
+history_refs*

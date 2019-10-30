@@ -27,6 +27,7 @@ def parse_args():
     return args
 
 def predict():
+    CONFIDENCE_THRESHOLD = 0.0001
     args = parse_args()
     cfg = mmcv.Config.fromfile(args.cfg)
     cfg.model.pretrained = None
@@ -35,8 +36,8 @@ def predict():
     model = init_detector(args.cfg, args.weights, device='cuda:0')
     #_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
     #for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_back_seats/*/*.png")):
-    for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_both_side_all_for_deploy/*/*.png")):
-    for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_both_side_back_seats/*/*.png")):
+    for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_angle_top_head/images_val/*.png")):
+    #for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_both_side_back_seats/*/*.png")):
         img = mmcv.imread(image)
         filename = image.split("/")[-1]
         start = time.time()
@@ -49,7 +50,7 @@ def predict():
         bboxes = np.vstack(result)
         for label,bbox in zip(labels,bboxes):
             threshold = bbox[-1]
-            if threshold < 0.8:
+            if threshold < CONFIDENCE_THRESHOLD:
                 continue
             x1,y1 = bbox[0],bbox[1]
             x2,y2 = bbox[2],bbox[1]

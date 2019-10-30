@@ -67,8 +67,8 @@ class workers_cluster():
         self.worker4 = Worker("right")
 #        self.worker5 = Worker("right")
 #        self.worker6 = Worker("right")
-        self.worker7 = Worker("back")
-        self.worker8 = Worker("back")
+        self.worker7 = Worker("backleft")
+        self.worker8 = Worker("backright")
         sys.stdout.flush()
         self.workers_list = [ \
                 self.worker1, \
@@ -147,17 +147,17 @@ def algorithm_detection_and_merge(workers, \
         pos7 = _thread7.positions
         pos8 = _thread8.positions
        #融合:
-        pos = pos1 + pos2 + pos3 + pos4 + pos5 + pos6 + pos7 + pos8
-        predictions_merged = seat_merge.seat_merge_all(pos, method=config.MERGE_METHOD) 
+        #pos = pos1 + pos2 + pos3 + pos4 + pos5 + pos6 + pos7 + pos8  #move to seat merge, will depracate in next version
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method=config.MERGE_METHOD) 
     else:
-        print("Running on serial mode...")
+        print("Running in serial mode with bug...")
         start_time = time.time()
-        pos = []
         i = 1
         for worker in workers_list:
-            pos += worker.do(image_data1, CONFIDENCE_THRESHOLD, time_num=int(i))
+            pos1 = worker.do(image_data1, CONFIDENCE_THRESHOLD, time_num=int(i))
             i += 0.5
-        predictions_merged = seat_merge.seat_merge_all(pos, method=config.MERGE_METHOD)
+        pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = pos1
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method=config.MERGE_METHOD) 
     print("TIME", time.time()-start_time, predictions_merged)
     sys.stdout.flush()
     return predictions_merged

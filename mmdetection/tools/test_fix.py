@@ -44,7 +44,7 @@ def coco_eval_substitude(outputs, dataset):
         plt.scatter(precisions[:,i], recalls[:,i], label=i)
         plt.title("PR-curve")
     plt.legend()
-    plt.show()
+    #plt.show()
     AUC_area = 0
     for i in range(len(dataset.cat_ids)):
         #must sort to motonic..... alright...

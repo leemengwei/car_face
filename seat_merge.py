@@ -42,20 +42,25 @@ def seat_merge_temporal(A_prediction, B_prediction, C_prediction):
     print("This is in temporal merge", predictions_merged)
     return predictions_merged
 
-def seat_merge_all(preds, method="union"):
+def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union"):
+    preds = pos1 + pos2 + pos3 + pos4 + pos5 + pos6 + pos7 + pos8
+    predictions_merged = []
     if method == "union":
-        predictions_merged = []
         for pred in preds:
             predictions_merged.append(pred)
         predictions_merged = set(predictions_merged)
     elif method == "vote":
-        predictions_merged = []
         for pred in preds:
             predictions_merged.append(pred)
         seat_count = np.zeros(config.NUM_OF_SEATS_PEER_CAR)
         for i in range(1, config.NUM_OF_SEATS_PEER_CAR+1):
             seat_count[i-1] = predictions_merged.count(i)
         predictions_merged = set(np.where(seat_count>=config.VOTE_THRESHOLD)[0]+1)
+    elif method == "front_and_back":
+        for pred in preds:
+            predictions_merged = []
+            sys.exit()
+        predictions_merged = set(predictions_merged)
     else:
         print("Wrong method given. [union, vote]")
         sys.exit()

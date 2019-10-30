@@ -74,6 +74,10 @@ class A(camera):
         classes = config.CLASSES_4
         with no_grad():
             objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
+            objs_indexes = [6 if x==1 else x for x in objs_indexes]   #replace 1 with 6
+            objs_indexes = [1 if x==0 else x for x in objs_indexes]  #replace 0 with 1
+            objs_indexes = [0 if x==6 else x for x in objs_indexes]   #replace 6 with 0
+            print("Warning here a bug!")  #TODO: MUST FIX and may not depracate in next version!
             print("This:", "index",objs_indexes, "score",objs_scores)
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
@@ -111,7 +115,7 @@ class A(camera):
 
     def get_refs_for_back(self):
         try:
-            angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 =list(np.loadtxt("./history_refs_%s"%self.side))
+            angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 =list(np.loadtxt("./history_refs_%s"%self.side.strip("back")))
             angle_x1 = np.array([-angle_x1])
             angle_y1 = np.array([-angle_y1])
             angle_x2 = np.array([-angle_x2])
@@ -129,6 +133,7 @@ class A(camera):
             top_y1 = np.array([])
             top_x2 = np.array([])
             top_y2 = np.array([])
+        embed()
         return angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2
 
     def check_refs_outputs(self, refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names):
@@ -325,12 +330,14 @@ class A(camera):
         if time_num == 1:
             refs_info = np.array([list(angle_x1), list(angle_y1), list(angle_x2), list(angle_y2), list(top_x1), list(top_y1), list(top_x2), list(top_y2)])
             np.savetxt("./history_refs_%s"%self.side, refs_info.reshape(-1))
+            print("history refs saved")
         if frame_status == "ok":
             #will depracate in next version
             #if self.side is not "back":  
                 #对人头的经验审查与修补：
                 #heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)   #will depracate in next version
-            #    pass   #应该也不需要dropoutside了， 因为网络会自动判定为pos1，不影响结果。
+            #    pass   
+            #应该也不需要dropoutside了， 因为网络会自动判定为pos1，不影响结果。 #Will depracate in next version
             #else:
                 #后侧暂不做任何丢弃人头的处理, 注意后侧图像无标识位问题，使用前侧（首帧）标识位。 
                 #pass

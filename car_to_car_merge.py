@@ -51,27 +51,46 @@ if __name__ == "__main__":
         images_back = images_both_side[-2:]
         #A_filelist = glob.glob("/home/user/left/*.jpg")
         #B_filelist = glob.glob("/home/user/right/*.jpg")
+        #LEFTS:
         preds = []
-        for image in images_left:
-            if config.VISUALIZATION:
-                plt.figure()
-            A_image_data = camera.get_image_data(image)
-            A_pos, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
-            preds += A_pos
-        for image in images_right:
-            if config.VISUALIZATION:
-                plt.figure()
-            B_image_data = camera.get_image_data(image)
-            B_pos, B_plt = B_program.self_logic(B_image_data, CONFIDENCE_THRESHOLD)
-            preds += B_pos
-        for image in images_back:
-            if config.VISUALIZATION:
-                plt.figure()
-            C_image_data = camera.get_image_data(image)
-            C_pos, C_plt = C_program.self_logic(C_image_data, CONFIDENCE_THRESHOLD)
-            preds += C_pos
-        car_result_union = seat_merge.seat_merge_all(preds, method = "union")
-        car_result_vote = seat_merge.seat_merge_all(preds, method = "vote")
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_left[0])
+        pos1, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD, time_num = 1)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_left[1])
+        pos2, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_left[2])
+        pos3, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        #RIGHTS:
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_right[0])
+        pos4, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD, time_num=1)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_right[1])
+        pos5, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_right[2])
+        pos6, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        #BACKS:
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_back[0])
+        pos7, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_back[1])
+        pos8, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+
+        car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
+        car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
+        car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "front_and_back")
         car_result_label = list(set(np.array(os.popen("cat %s/*.json|grep head|grep label|cut -c 21|sort|uniq"%car.replace(' ','\ ')).read().split()).astype(int)))
         print("Label this car:", car_result_label)
         if len(car_result_label)==0:
