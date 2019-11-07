@@ -221,7 +221,7 @@ def my_csv_eval(all_detections, dataset, SCORE_THR, iou_threshold):
     return np.array(list(f1_scores.values())), np.array(list(precisions.values())), np.array(list(recalls.values()))
 
 def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
-    print("Using confidence score:", CONFIDENCE_THRESHOLD)
+    #print("Using confidence score:", CONFIDENCE_THRESHOLD)
     model.eval()
     start = time.time()
     result = inference_detector(model, _data)
@@ -251,8 +251,6 @@ def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
         y2s = np.hstack((y2s, y3))
         scores = np.hstack((scores, threshold))
         label_names.append(label)
-    names = ["angle", "top", "head", " ", " "]
-    print(label_names, scores)
     return x1s,y1s,x2s,y2s, scores,label_names, elapsed_time
 
 def single_gpu_test(model, data_loader, SCORE_THR, show=False):

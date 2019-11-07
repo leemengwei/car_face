@@ -40,12 +40,13 @@ import mmdetection.tools.test_fix as test_fix
 from mmdet.apis import init_detector
 
 class A(camera):
-    def __init__(self, root_dir, side):
+    def __init__(self, root_dir, side, time_num):
         super(A, self).__init__()
         self.root_dir = root_dir
         if type(self.root_dir) is bytes:
             self.root_dir = self.root_dir.decode("utf-8")
         self.side = side
+        self.time_num = time_num
         #Init model:
         #Sptial net 载入结构：
         self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=config.NUM_OF_SEATS_PEER_CAR)
@@ -58,8 +59,7 @@ class A(camera):
         self.net_spatial.cuda().eval()
         self.net_to_detect_objs.cuda().eval()
         #self.net_to_detect_objs_night.cuda().eval()
-        print("Side %s-Initialized."%self.side)
-
+        print("Side %s-%s Initialized."%(self.side, self.time_num))
     def get_mmd_model_and_template(self, _mmd_config, _mmd_weights):
         cfg = mmcv.Config.fromfile(_mmd_config)
         # set cudnn_benchmark
@@ -77,8 +77,8 @@ class A(camera):
             objs_indexes = [6 if x==1 else x for x in objs_indexes]   #replace 1 with 6
             objs_indexes = [1 if x==0 else x for x in objs_indexes]  #replace 0 with 1
             objs_indexes = [0 if x==6 else x for x in objs_indexes]   #replace 6 with 0
-            print("Warning here a bug!")  #TODO: MUST FIX and may not depracate in next version!
-            print("This:", "index",objs_indexes, "score",objs_scores)
+            #print("Warning here a bug!")  #TODO: MUST FIX and may not depracate in next version!
+            print("Detection(%s-%s):"%(self.side, self.time_num), objs_indexes, objs_scores)
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
                 heads_x1s = objs_x1s[np.where(objs_names=='head')]
@@ -116,14 +116,14 @@ class A(camera):
     def get_refs_for_back(self):
         try:
             angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 =list(np.loadtxt("./history_refs_%s"%self.side.strip("back")))
-            angle_x1 = np.array([-angle_x1])
-            angle_y1 = np.array([-angle_y1])
-            angle_x2 = np.array([-angle_x2])
-            angle_y2 = np.array([-angle_y2])
-            top_x1 = np.array([-top_x1])
-            top_y1 = np.array([-top_y1])
-            top_x2 = np.array([-top_x2])
-            top_y2 = np.array([-top_y2])
+            angle_x1 = np.array([angle_x1])
+            angle_y1 = np.array([angle_y1])
+            angle_x2 = np.array([angle_x2])
+            angle_y2 = np.array([angle_y2])
+            top_x1 = np.array([top_x1])
+            top_y1 = np.array([top_y1])
+            top_x2 = np.array([top_x2])
+            top_y2 = np.array([top_y2])
         except:
             angle_x1 = np.array([])
             angle_y1 = np.array([])
@@ -133,7 +133,6 @@ class A(camera):
             top_y1 = np.array([])
             top_x2 = np.array([])
             top_y2 = np.array([])
-        embed()
         return angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2
 
     def check_refs_outputs(self, refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names):
@@ -196,7 +195,7 @@ class A(camera):
                 angle_x2 = top_x2-660.4268173950429
                 angle_y2 = top_y2+159.48261207951592
                 angle_score = np.array([0]).reshape(-1,1)
-            elif (len(angle_score)==0 and len(top_score)==0):   #对于两个标识物一个都没有的情况，则状态变为无效帧
+            elif (len(angle_score)==0 and len(top_score)==0):   #对于两个标识物一个都没有的情况，则状态变为无框帧
                 frame_status = "NoRefs"
             else:   #或者都刚好有一个的情况,
                 if ((abs(top_x1+top_x2)/2 <= abs(angle_x1+angle_x2)/2) or (abs(top_y1+top_y2)/2 >= abs(angle_y1+angle_y2)/2)):
@@ -217,20 +216,20 @@ class A(camera):
                 angle_y2 = top_y2+124.53897522533538
                 #data.loc[right]['ref1_y2'].mean()-data.loc[right]['ref2_y2'].mean()
                 angle_score = np.array([0]).reshape(-1,1)
-            elif (len(angle_score)==0 and len(top_score)==0):  #对于两个标识物一个都没有的情况，则状态变为无效帧
+            elif (len(angle_score)==0 and len(top_score)==0):  #对于两个标识物一个都没有的情况，则状态变为无框帧
                 frame_status = "NoRefs"
             else:   #或者都刚好有一个的情况,
                 if ((abs(top_x1+top_x2)/2 >= abs(angle_x1+angle_x2)/2) or (abs(top_y1+top_y2)/2 >= abs(angle_y1+angle_y2)/2)):
                     frame_status = "RightSideTwistedRefs"
                 else:
                     pass
-        else:  #self.side is "back"
+        else:  #self.side is "backleft or backright"
            #本帧图像给出的top和angle都可直接舍弃（就不该有）
-           #读取文件内容得到磁盘记录的标识物位置，并给出足以区分前后相机不同定位空间的值（如取负操作等）：
+           #读取文件内容得到磁盘记录的标识物位置，并注意，在后续定位时给出足以区分前后相机不同定位空间的值（如取负操作等）：
            angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 = self.get_refs_for_back()
            #判断历史的一些信息：取首个帧，故长度不会超过1
            if len(angle_x1)==1 and len(top_x1)==1:
-               pass  #frame_status is still ok
+               pass
            else:
                frame_status = "BackRefsNotEnough"
         return angle_x1, angle_y1, angle_x2, angle_y2, \
@@ -243,10 +242,10 @@ class A(camera):
         top_yc = ((top_y1+top_y2)/2).reshape(-1)
         heads_keep_idx = []
         for idx in range(len(heads_x1s)):
-            head_xc = ((heads_x1s[idx]+heads_x2s[idx])/2).reshape(-1)
-            head_yc = ((heads_y1s[idx]+heads_y2s[idx])/2).reshape(-1)
+            head_x_center = ((heads_x1s[idx]+heads_x2s[idx])/2).reshape(-1)
+            head_y_center = ((heads_y1s[idx]+heads_y2s[idx])/2).reshape(-1)
             #判断是否在窗内:
-            if (head_xc>min(angle_xc, top_xc) and head_xc<max(angle_xc, top_xc) and head_yc>min(angle_yc, top_yc) and head_yc<max(angle_yc, top_yc)):
+            if (head_y_center>min(angle_yc, top_yc) and head_y_center<max(angle_yc, top_yc)):    #上下超出做drop
                 heads_keep_idx.append(idx)
             else:
                 print("Outside head dropped...")
@@ -259,15 +258,19 @@ class A(camera):
     def get_spatial_in_seat_position(self, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s):
         if len(heads_x1s)==0:   #如果：没人头
             if len(angle_x1)!=0 or len(top_x1)!=0:   #但出现了标识物
-                status = "Empirical, %s head, %s refs, case 1.[1,]"%(len(heads_x1s), len(angle_x1)+len(top_x1))
+                status = "No head, but must have car,"
                 return [1,], status    #肯定有车，所以肯定有司机
             else:    #连标识物都没有
-                status = "Empirical, %s head, %s refs, case 2.[0,]"%(len(heads_x1s), len(angle_x1)+len(top_x1))
+                status = "SHOULD_NOT_BE_HERE!!..............will depracate in next version 1"
                 return [0,], status    #那就算了,什么都没有
         else:                   #如果:有人头
             if len(angle_x1)==1 and len(top_x1)==1:  #并且刚好标识物各有一个,运行神经网络
                 #生成输入矩阵 n×12维度， n是人头个数
-                inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
+                if "back" in self.side:
+                    #仅以区分前后映射空间的不同
+                    inputs_tmp = np.tile(np.array([-angle_x1, -angle_y1, -angle_x2, -angle_y2, -top_x1, -top_y1, -top_x2, -top_y2]).reshape(-1), (len(heads_x1s),1))
+                else:
+                    inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
                 positions_peer_side = {}
                 with no_grad():
                     for i in range(len(heads_x1s)):
@@ -291,20 +294,21 @@ class A(camera):
                 #Add in driver.
                 positions_peer_side[1]="666" if 1 not in positions_peer_side.keys() else positions_peer_side[1]
                 _result_ = list(positions_peer_side.keys())
-                status = "Predicted, %s head, %s refs, case 3. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
+                status = "Predicted"
                 return _result_, status
             elif len(angle_x1)==0 and len(top_x1)==0:   #没有任何标识物
                 if config.night_cast():
                     possible_seat = [1,2,3,4,5]  #将从经验位置顺序里直接取
                     _result_ = possible_seat[:len(heads_x1s)]
-                    status = "Empirical, %s head, %s refs, case 4. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
+                    status = "SHOULD_NOT_BE_HERE!!...........will depracate in next version 2"
                 else:
                     _result_ = [0,]
-                    status = "Empirical, %s head, %s refs, case 5. %s"%(len(heads_x1s), len(angle_x1)+len(top_x1), _result_)
+                    status = "SHOULD_NOT_BE_HERE!!...........will depracate in next version 3"
                 return _result_, status 
             else:
-                print("?????")   #之前已经强制就绪了两个标识物，要么都有要么都没有，不该出现这种情况。
+                print("SHOULD_NOT_BE_HERE!!............will depracate ?????")   #之前已经强制就绪了两个标识物，要么都有要么都没有，不该出现这种情况。
                 sys.exit()
+
     def ignore_5(self, positions_peer_side):
         move_to_seat = 3 if self.side == 'left' else 4
         try:
@@ -312,9 +316,9 @@ class A(camera):
         except:
             pass
         return positions_peer_side
-    def self_logic(self, image_data, CONFIDENCE_THRESHOLD, time_num = None):
+    def self_logic(self, image_data, CONFIDENCE_THRESHOLD):
         if image_data.dtype == np.uint8:   #If come from C
-            print("Must be C running...")
+            #print("Must be C running...")
             image_data = image_data.astype(float)/255
         #print(image_data.min(), image_data.mean(), image_data.max())
         #判定当前全局信号，GPU是否开始检测
@@ -327,30 +331,39 @@ class A(camera):
         refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLD)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
-        if time_num == 1:
+        if self.time_num == 1:
             refs_info = np.array([list(angle_x1), list(angle_y1), list(angle_x2), list(angle_y2), list(top_x1), list(top_y1), list(top_x2), list(top_y2)])
-            np.savetxt("./history_refs_%s"%self.side, refs_info.reshape(-1))
-            print("history refs saved")
-        if frame_status == "ok":
-            #will depracate in next version
-            #if self.side is not "back":  
-                #对人头的经验审查与修补：
-                #heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2)   #will depracate in next version
-            #    pass   
-            #应该也不需要dropoutside了， 因为网络会自动判定为pos1，不影响结果。 #Will depracate in next version
-            #else:
-                #后侧暂不做任何丢弃人头的处理, 注意后侧图像无标识位问题，使用前侧（首帧）标识位。 
-                #pass
-            #位置判别网络：
-            positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
-            #暂时忽略5位置
-            #positions_peer_side = self.ignore_5(positions_peer_side)
-            time_used = time.time() - start_time
-        else:
-            status = "Frame Skipped since (%s)"%frame_status
-            positions_peer_side = [0,]
-            time_used = time.time() - start_time
-        print("Side:", self.side, "Time_used:", np.round(time_used, 3), "Judge_stauts:", status, "Positions_peer_frame_peer_side:************", positions_peer_side, "********")
+            np.savetxt("./history_refs_%s"%self.side, refs_info.reshape(-1))   #首帧refs将会在每次threads调用时清除
+            #print("history refs saved")
+        #前侧则：
+        if self.side == "left" or self.side =="right":
+            if frame_status == "ok":    #识别或补充到两个标识物才是ok
+                #对人头的经验审查与修补（纵向超高的）：
+                heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2) 
+                #位置判别网络：
+                positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
+                #暂时忽略5位置
+                if config.IGNORE_5:
+                    positions_peer_side = self.ignore_5(positions_peer_side)
+            elif frame_status == "NoRefs":   #此时都没有车，根据左右直接猜
+                status = "Direct Guess"
+                positions_peer_side = [1, 2, 3, 5, 4][:min(len(heads_x1s),5)] if self.side == 'left' else [1, 2, 3, 4, 5][:min(len(heads_x1s),5)]
+                positions_peer_side = [0,] if len(positions_peer_side)==0 else positions_peer_side
+            else:
+                status = "Frame Skipped since (%s)"%frame_status
+                positions_peer_side = [0,]
+        #是后侧
+        else:  
+            #目前后侧直接猜，不在乎 frame_status。
+            status = "Direct guess"
+            if self.side == "backleft":
+                positions_peer_side = [4, 3, 5, 1, 2][:min(len(heads_x1s),5)]
+            else:   # self.side == "backright"
+                positions_peer_side = [3, 4, 5, 2, 1][:min(len(heads_x1s),5)]
+            positions_peer_side = [0,] if len(positions_peer_side)==0 else positions_peer_side
+        time_used = time.time() - start_time
+        print("Localization(%s-%s):"%(self.side, self.time_num), status, "***", positions_peer_side, "***")
+
         #VISUALIZATION:
         if VISUALIZATION:
             #Plot1:
@@ -400,8 +413,8 @@ class A(camera):
                 view_name = self.root_dir+'/views/'+''.join(list((np.where(seats[0]!=0)[0]+1).astype(str)))+".png"
             else:
                 view_name = self.root_dir+'/views/0.png'
-            #embed()
-            ax3.imshow(plt.imread(view_name))
+            if os.path.exists(view_name):
+                ax3.imshow(plt.imread(view_name))
             plt.draw()
             plt.pause(0.001)
             input()
@@ -417,7 +430,7 @@ if __name__ == "__main__":
     root_dir = "/".join(os.getcwd().split('/')[:-1])
     A_program = A(root_dir, "left")
     print("Real_time running...")
-    filelist = glob.glob("../left/*.jpg")    #TODO : Feed A.py left data to get correct results
+    filelist = glob.glob("../left/*.jpg")   
     for idx, filename in enumerate(filelist[:]):
         image_data = camera.get_image_data(filename)
         CONFIDENCE_THRESHOLD = config.get_confidence()

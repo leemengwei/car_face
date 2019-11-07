@@ -30,7 +30,10 @@ if __name__ == "__main__":
     B_program = A.A(root_dir, "right")
     #C:
     print("Initializing front camera C...")
-    C_program = A.A(root_dir, "back")
+    C_program = A.A(root_dir, "backleft")
+    #D:
+    print("Initializing front camera D...")
+    D_program = A.A(root_dir, "backright")
 
     car_to_car_dir = config.CAR_TO_CAR_DIR
     cars = glob.glob(car_to_car_dir+"/*")
@@ -86,7 +89,7 @@ if __name__ == "__main__":
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[1])
-        pos8, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos8, A_plt = D_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
 
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
@@ -108,7 +111,9 @@ if __name__ == "__main__":
             if len(set(car_result_vote)) == len(car_result_label):
                 number_score_by_vote += 1
             print("PbyU:", position_score_by_union, "PbyV:", position_score_by_vote, "NbyU:", number_score_by_union, "NbyV:", number_score_by_vote, "All:", all_num)
-        #input()
+        input()
+        plt.close()
+        plt.close()
         plt.close()
         plt.close()
         plt.close()

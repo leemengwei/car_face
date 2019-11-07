@@ -8,7 +8,6 @@
 #import skimage.io._plugins.matplotlib_plugin
 #skimage.io.use_plugin('pil', 'imread')   #这些都是编译exe所需，这里须显示调用pil的imread，而不是matplotlib的，因为我训练的时候dataloader里默认用的是pil的imread，和matplotlib的imread读取的数据分布不一样。
 
-
 def night_cast():
     try:
         with open("./daylight", 'r') as f:
@@ -40,6 +39,8 @@ VISUALIZATION        = True
 UNVEIL               = False
 UNVEIL               = True
 
+IGNORE_5 = False
+IGNORE_5 = True
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
 CONFIDENCE_THRESHOLD = get_confidence()   
 
@@ -55,7 +56,7 @@ MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_18_287
 
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-#PARALLEL_MODE = True
+PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 
@@ -64,7 +65,7 @@ if PARALLEL_MODE:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/mfs/home/limengwei/car_face/car_face/car_to_car/"
+CAR_TO_CAR_DIR = "/mfs/home/limengwei/car_face/shanghai_data/round2/backclear/"
 #CAR_TO_CAR_DIR = "/home/user/list/"
 
 
