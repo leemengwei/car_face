@@ -1,0 +1,23 @@
+融合训练：
+(脚本会自动判断数据是8图还是6图，以不同的策略生成训练数据)
+CUDA_VISIBLE_DEVICES=1 python spatial_in_seat_train_and_test.py -EX=1 -BS=100 -E=1000 -V -R -RM=model_both_side_old/model_best.pt -DP=./spatial_data_front_and_back/
+
+融合验证：
+
+融合测试：
+CUDA_VISIBLE_DEVICES=1 python spatial_in_seat_train_and_test.py -E=-1 -V -RM=model_both_side_old/model_best.pt -DP=./data_both_side_old/
+
+
+
+
+#编辑config文件
+
+seat_merge.py是融合的程序。
+
+#串行逐车（每辆车一个文件夹，左右各三幅图），复现结果，可以画图：
+python car_to_car_merge.py
+
+#并行逐车， 注意不可画图！！复现结果：
+python threads_start.py
+
+

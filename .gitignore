@@ -100,5 +100,42 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# mypy
+# mypy-------------------------------------------
 .mypy_cache/
+*.jpg
+*.jpeg
+*.bmp
+*.png
+*.csv
+*.txt
+*.pt
+*.pth
+*.log
+*.json
+*.json_corrupt
+*.gv
+*.pdf
+*.history_ref_*
+
+*.cpp
+*.h
+*.hpp
+*.pro
+*.ui
+
+daylight
+
+*.pkl
+*/*.pkl
+*.so
+*.rar
+*.zip
+*.tar
+*.gz
+*.o
+*.pyc
+__pycache__
+
+*.egg
+
+history_refs*

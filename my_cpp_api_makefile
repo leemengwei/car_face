@@ -1,0 +1,14 @@
+old 56:
+clear; g++ -I/opt/anaconda3/include/python3.6m/ -I/opt/anaconda3/lib/python3.6/site-packages/numpy/core/include/numpy -lpython3.6m Cpp_API.cpp;./a.out
+
+clang 55:  (新装了clang ，之前的还是找不到引用)
+clear;
+./a.out
+
+
+on 53:
+
+
+on 35suo 125:
+
+clang -lstdc++ -I/usr/local/include/python3.6m/ -lpython3.6m -I/usr/local/lib/python3.6/site-packages/numpy/core/include/numpy/ `pkg-config --cflags --libs opencv` Cpp_API.cpp

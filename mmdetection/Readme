@@ -1,0 +1,56 @@
+#SPA net
+python spatial_in_seat_train_and_test.py -EX=1 -BS=100 -E=1000 -V -R -RM=spatial_model_both_side_finetunes/model_best.pt -DP=./spatial_data_both_side_finetunes/
+python spatial_in_seat_train_and_test.py -EX=1 -BS=100 -E=1000 -V -DP=./spatial_data_front_and_back/
+
+
+
+#OBJ
+#数据集
+#labelme to coco
+python labelme2coco.py
+#csv to coco
+(建立train_images;val_images， 连接图片进去)
+python csv2coco.py
+(注意改一下标签categories{}，then ：1,$s/category_id\": 2/category_id\": 1/g, 如为新数据retrain一定确保categories与原来的统一！)
+cp generate_coco/cocos_here/annotations/instances_train2017.json ../instances_train2017_4.json
+cp generate_coco/cocos_here/annotations/instances_val2017.json ../instances_val2017_4.json
+
+
+#分布式训练
+./tools/dist_train.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py 2 --validate
+./tools/dist_train.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py 2 --validate
+
+
+#With AUC and best conf:
+python tools/test_fix.py configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py work_dirs/cascade_rcnn_hrnet_4/latest.pth --out result.pkl --eval bbox --show 
+./tools/dist_test.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py work_dirs/car_face_retrain/epoch_13.pth 2 --out result.pkl --eval bbox 
+
+python tools/test_fix.py configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_back_seat.py work_dirs/car_face_back_seat/epoch_2.pth --out result.pkl --eval bbox --show 
+#Deploy可视化、结果
+python demo.py --weights ../../object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth --cfg ../configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_no_aug.py
+
+#分布式循环测试：
+for((i=1;i<=12;i++));  
+do
+echo "On epoch:"${i}
+./tools/dist_test.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py work_dirs/cascade_rcnn_hrnet_4/epoch_${i}.pth 2 --out result_${i}.pkl --eval bbox 
+done
+
+for((i=1;i<=50;i++));  
+do
+echo "On epoch:"${i}
+./tools/dist_test.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py work_dirs/car_face_retrain/epoch_${i}.pth 2 --out result.pkl --eval bbox
+done
+
+
+#日志
+python tools/analyze_logs.py plot_curve work_dirs/cascade_rcnn_hrnet_4/20190629_171935.log.json --keys bbox_mAP_50
+python tools/analyze_logs.py plot_curve work_dirs/cascade_rcnn_hrnet_4/20190629_171935.log.json --keys loss lr
+
+
+
+
+#未来：
+python tools/compare_pkl.py 可以针对不同result_${i}.pkl找出问题。 有望进行闭环
+
+

@@ -1,0 +1,8 @@
+定位训练：
+CUDA_VISIBLE_DEVICES=1 python spatial_in_seat_train_and_test.py -EX=1 -BS=100 -E=1000 -V -R -RM=spatial_model_both_side_old/model_best.pt -DP=./spatial_data_both_side_old/
+
+定位验证：
+暂略
+
+定位测试：
+CUDA_VISIBLE_DEVICES=1 python spatial_in_seat_train_and_test.py -E=-1 -V -RM=spatial_model_both_side_old/model_best.pt -DP=./spatial_data_both_side_old/
