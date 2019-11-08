@@ -66,7 +66,7 @@ def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union
     if (0 in predictions_merged):
         predictions_merged.remove(0)
     predictions_merged = list(predictions_merged)
-    print("Merge:", predictions_merged, method, pos7, pos8)
+    print("Merge:", predictions_merged, method, "back pos given:", pos7, pos8)
     return predictions_merged
 
 class Thread_A(threading.Thread):

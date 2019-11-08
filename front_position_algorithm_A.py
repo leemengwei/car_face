@@ -354,7 +354,7 @@ class A(camera):
                 positions_peer_side = [0,]
         #是后侧
         else:  
-            #目前后侧直接猜，不在乎 frame_status。
+            #目前后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
             status = "Direct guess"
             if self.side == "backleft":
                 positions_peer_side = [4, 3, 5, 1, 2][:min(len(heads_x1s),5)]

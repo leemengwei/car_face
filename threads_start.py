@@ -8,6 +8,8 @@ import front_position_algorithm_A as A
 from camera import camera
 import seat_merge
 from IPython import embed
+import numpy as np
+
 class Worker():
     def __init__(self, side, time_num=None):
         self.root_dir = os.getcwd()
@@ -162,6 +164,13 @@ def algorithm_detection_and_merge(workers, \
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union") 
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="vote") 
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="front_and_back")
+    #目前分别返回：后侧加在最后，并以“人数个数”显示（而不是位置）
+    num7 = len(np.where(np.array(pos7)!=0)[0])
+    num8 = len(np.where(np.array(pos8)!=0)[0])
+    predictions_merged = predictions_merged + [num7] + [num8]
+    print("predictions_merged", predictions_merged)
+
+
     print("-"*50, "TIME", time.time()-start_time, '-'*50)
     sys.stdout.flush()
     return predictions_merged
