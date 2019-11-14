@@ -320,6 +320,7 @@ class A(camera):
         if image_data.dtype == np.uint8:   #If come from C
             #print("Must be C running...")
             image_data = image_data.astype(float)/255
+        #TODO: 当后侧相机传来图像，该图像的分辨率和前侧不一样。目前前后模型一起训练的，也就是说后侧数据在训练和测试的时候都会被压扁然后经过网络。
         #print(image_data.min(), image_data.mean(), image_data.max())
         #判定当前全局信号，GPU是否开始检测
         #Preprocess cam data:
