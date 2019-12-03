@@ -123,7 +123,7 @@ train_cfg = dict(
         sampler=dict(
             type='RandomSampler',
             num=256,
-            pos_fraction=0.2,
+            pos_fraction=0.5/1.5,
             neg_pos_ub=-1,
             add_gt_as_proposals=False),
         allowed_border=0,
@@ -147,7 +147,7 @@ train_cfg = dict(
             sampler=dict(
                 type='RandomSampler',
                 num=512,
-                pos_fraction=0.1,
+                pos_fraction=0.25/1.5,
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
@@ -162,7 +162,7 @@ train_cfg = dict(
             sampler=dict(
                 type='RandomSampler',
                 num=512,
-                pos_fraction=0.1,
+                pos_fraction=0.25/1.5,
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
@@ -177,7 +177,7 @@ train_cfg = dict(
             sampler=dict(
                 type='RandomSampler',
                 num=512,
-                pos_fraction=0.1,
+                pos_fraction=0.25/1.5,
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
@@ -194,7 +194,8 @@ test_cfg = dict(
         min_bbox_size=0),
     rcnn=dict(
         score_thr=0.05,
-        nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05),
+        #nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05),    #Strange, soft will cause exlabelImg duplicate bbox
+        nms=dict(type='nms', iou_thr=0.5),
         max_per_img=100),
     #bbox_vote=dict(enable=True, vote_th=0.9),
     keep_all_stages=False)
@@ -206,13 +207,13 @@ img_norm_cfg = dict(
     std=[58.395, 57.12, 57.375],
     to_rgb=True)
 data = dict(
-    imgs_per_gpu=3,
-    workers_per_gpu=8,
+    imgs_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_all.json",
-        img_prefix=data_root+"object_detection_data_angle_top_head/images_train/",
-        img_scale=[(960,540), (960*1.1, 540*1.1, 960*1.2, 540*1.2)],
+        ann_file=data_root+"standard_train_with_2.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_all/",
+        img_scale=[(960,540)],
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0.5,
@@ -221,8 +222,8 @@ data = dict(
         with_label=True),
     val=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_all_val.json",
-        img_prefix=data_root+"object_detection_data_angle_top_head/images_val/",
+        ann_file=data_root+"standard_val.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_all/",
         img_scale=(960, 540),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -232,10 +233,9 @@ data = dict(
         with_label=True),
     test=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_all_val.json",
-        img_prefix=data_root+"object_detection_data_angle_top_head/images_val/",
-        #ann_file=data_root+"instances_val2017_4.json",
-        #img_prefix=data_root+"object_detection_data_both_side_finetunes/val_images/",
+        #ann_file=data_root+"tmp.json",
+        ann_file=data_root+"standard_val.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_all/",
         img_scale=(960, 540),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -244,7 +244,7 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0000)
+optimizer = dict(type='SGD', lr=0.004, momentum=0.9, weight_decay=1e-5)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -263,11 +263,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 50
+total_epochs = 15
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/car_face_retrain_more_negative/'
+work_dir = './work_dirs/car_face_retrain_less15_batch4/'
 load_from = "coco_pretrained/coco_cascade_rcnn_hrnetv2_w32_fpn_4.pth"
 resume_from = None
-#resume_from = "./work_dirs/car_face/latest.pth"
 workflow = [('train', 1)]

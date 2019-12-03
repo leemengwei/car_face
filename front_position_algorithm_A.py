@@ -40,7 +40,7 @@ import mmdetection.tools.test_fix as test_fix
 from mmdet.apis import init_detector
 
 class A(camera):
-    def __init__(self, root_dir, side, time_num):
+    def __init__(self, root_dir, side, time_num=1):
         super(A, self).__init__()
         self.root_dir = root_dir
         if type(self.root_dir) is bytes:
@@ -74,9 +74,9 @@ class A(camera):
         classes = config.CLASSES_4
         with no_grad():
             objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
-            objs_indexes = [6 if x==1 else x for x in objs_indexes]   #replace 1 with 6
-            objs_indexes = [1 if x==0 else x for x in objs_indexes]  #replace 0 with 1
-            objs_indexes = [0 if x==6 else x for x in objs_indexes]   #replace 6 with 0
+            #objs_indexes = [6 if x==1 else x for x in objs_indexes]   #replace 1 with 6
+            #objs_indexes = [1 if x==0 else x for x in objs_indexes]  #replace 0 with 1
+            #objs_indexes = [0 if x==6 else x for x in objs_indexes]   #replace 6 with 0
             #print("Warning here a bug!")  #TODO: MUST FIX and may not depracate in next version!
             print("Detection(%s-%s):"%(self.side, self.time_num), objs_indexes, objs_scores)
             objs_names = np.array([classes[i] for i in objs_indexes])
@@ -324,7 +324,7 @@ class A(camera):
         #print(image_data.min(), image_data.mean(), image_data.max())
         #判定当前全局信号，GPU是否开始检测
         #Preprocess cam data:
-        angle_cam_frame = self.preprocess_cam_frame(image_data)
+        #angle_cam_frame = self.preprocess_cam_frame(image_data)   #Will deprecate in next version
         net_cam_frame = image_data*255
         #print(image_data.min(), image_data.mean(), image_data.max())
         start_time = time.time()
@@ -418,7 +418,7 @@ class A(camera):
                 ax3.imshow(plt.imread(view_name))
             plt.draw()
             plt.pause(0.001)
-            input()
+            #input()
         return [positions_peer_side, plt]
 
 if __name__ == "__main__":

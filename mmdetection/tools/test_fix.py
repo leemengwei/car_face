@@ -23,8 +23,9 @@ import matplotlib.pyplot as plt
 import sklearn.metrics
 sys.path.append("/home/user/PersonDetection99/car_face/")
 
-def coco_eval_substitude(outputs, dataset):
-    f1s = np.empty(shape=(0,len(dataset.cat_ids)))
+def coco_eval_substitude(outputs, dataset, show=False):
+    #f1s = np.empty(shape=(0,len(dataset.cat_ids)))
+    f1s = np.array(np.tile(0,len(dataset.cat_ids)))
     precisions = np.array(np.tile(0,len(dataset.cat_ids)))
     recalls = np.array(np.tile(1,len(dataset.cat_ids)))
     axis_conf = np.linspace(0.01, 0.99, 99)
@@ -35,8 +36,10 @@ def coco_eval_substitude(outputs, dataset):
             f1s = np.vstack((f1s, f1))
             precisions = np.vstack((precisions, precision))
             recalls = np.vstack((recalls, recall))
-    most_confident = np.where(f1s.sum(axis=1)==f1s.sum(axis=1).max())[0][-1]
-    print("***Please set score thr to %s, to get comprehensive performance of %s"%(axis_conf[most_confident], f1s[most_confident]))
+    head_col = 2
+    #most_good = np.where(f1s.sum(axis=1)==f1s.sum(axis=1).max())[0][-1]
+    most_good = np.where(f1s[:,head_col].max()==f1s[:,head_col])[0][f1s[np.where(f1s[:,head_col].max()==f1s[:,head_col])].sum(axis=1).argmax()]
+    print("***Please set score thr to %s, to get class(es) performance of %s"%(axis_conf[most_good], f1s[most_good]))
     #model selection:
     precisions = np.vstack((precisions, np.tile(1,len(dataset.cat_ids))))
     recalls = np.vstack((recalls, np.tile(0,len(dataset.cat_ids))))
@@ -44,7 +47,8 @@ def coco_eval_substitude(outputs, dataset):
         plt.scatter(precisions[:,i], recalls[:,i], label=i)
         plt.title("PR-curve")
     plt.legend()
-    #plt.show()
+    if show:
+        plt.show()
     AUC_area = 0
     for i in range(len(dataset.cat_ids)):
         #must sort to motonic..... alright...
@@ -54,7 +58,6 @@ def coco_eval_substitude(outputs, dataset):
         AUC_area = AUC_area + tmp_AUC
         print("AUC performance on %s: %s"%(i, tmp_AUC))
     print("***Total AUC:", AUC_area)
-    #embed()
     return AUC_area
 
 def compute_overlap(a, b):
@@ -109,8 +112,9 @@ def _compute_ap_area(recall, precision):     #Name modified by LMW
     ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
-def my_csv_eval(all_detections, dataset, SCORE_THR, iou_threshold):
+def my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold):
     #使用旧版（retinanet的csveval），先准备其需要的detections：
+    all_detections = copy.deepcopy(outputs)
     for idx1,detections in enumerate(all_detections):
         for idx2,i in enumerate(detections): 
             detections[idx2] = i[np.where(i[:,-1]>SCORE_THR)]
@@ -259,13 +263,12 @@ def single_gpu_test(model, data_loader, SCORE_THR, show=False):
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
-        #print("\nTesting on %s"%data_loader.dataset.img_prefix+data_loader.dataset.img_infos[i]['filename'])
         #sys.stdout.flush()
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
-
         if show:
+            print("\nTesting on %s"%data_loader.dataset.img_prefix+data_loader.dataset.img_infos[i]['filename'])
             if SCORE_THR is not None:
                 model.module.show_result(data, result, dataset.img_norm_cfg, score_thr=SCORE_THR)   #score_thr is here, hidden
             else:
@@ -367,7 +370,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    SCORE_THR = None
+    SCORE_THR = 0.49
 
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
@@ -404,8 +407,7 @@ def main():
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
         model.CLASSES = dataset.CLASSES
-    model.CLASSES = ("angle","top","head")
-    #embed()
+    model.CLASSES = ("1angle?","2top?","3head?")
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, SCORE_THR, args.show)
@@ -413,7 +415,7 @@ def main():
         model = MMDistributedDataParallel(model.cuda())
         outputs = multi_gpu_test(model, data_loader, args.tmpdir)
 
-    rank, _ = get_dist_info()
+    rank, _ = get_dist_info()   #Distribution info
     if args.out and rank == 0:
         print('\nwriting results to {}'.format(args.out))
         mmcv.dump(outputs, args.out)
@@ -423,21 +425,25 @@ def main():
             if eval_types == ['proposal_fast']:
                 result_file = args.out
                 #coco_eval(result_file, eval_types, dataset.coco)
-                coco_eval_substitude(outputs, dataset)
+                coco_eval_substitude(outputs, dataset, args.show)
             else:
                 if not isinstance(outputs[0], dict):
+                    #car_face走着里::::::::::::::::::::::::
                     result_file = args.out + '.json'
                     #results2json(dataset, outputs, result_file)
                     #coco_eval(result_file, eval_types, dataset.coco)
-                    coco_eval_substitude(outputs, dataset)
+                    coco_eval_substitude(outputs, dataset, args.show)
                 else:
                     for name in outputs[0]:
                         print('\nEvaluating {}'.format(name))
-                        outputs_ = [out[name] for out in outputs]
+                        #outputs_ = [out[name] for out in outputs]
+                        outputs_ = []
+                        for out in outputs:
+                            outputs_.append(out[name])
                         result_file = args.out + '.{}.json'.format(name)
                         #results2json(dataset, outputs_, result_file)
                         #coco_eval(result_file, eval_types, dataset.coco)
-                        coco_eval_substitude(outputs, dataset)
+                        coco_eval_substitude(outputs, dataset, args.show)
 
 
 if __name__ == '__main__':

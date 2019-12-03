@@ -27,7 +27,7 @@ def parse_args():
     return args
 
 def predict():
-    CONFIDENCE_THRESHOLD = 0.0001
+    CONFIDENCE_THRESHOLD = 0.9
     args = parse_args()
     cfg = mmcv.Config.fromfile(args.cfg)
     cfg.model.pretrained = None
@@ -36,7 +36,7 @@ def predict():
     model = init_detector(args.cfg, args.weights, device='cuda:0')
     #_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
     #for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_back_seats/*/*.png")):
-    for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_angle_top_head/images_val/*.png")):
+    for image in tqdm(glob("/mfs/home/limengwei/Nankang_wood_counter/data/our_wood/*.jpg")):
     #for image in tqdm(glob("/mfs/home/limengwei/car_face/car_face/object_detection_data_both_side_back_seats/*/*.png")):
         img = mmcv.imread(image)
         filename = image.split("/")[-1]

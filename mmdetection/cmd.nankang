@@ -7,7 +7,8 @@ python tools/test.py configs/nankang/cascade_rcnn_hrnetv2p_w32_20e.py work_dirs/
 
 
 
-
+#Deploy可视化、结果
+python tools/demo.py --weights work_dirs/nankang_on_cad/latest.pth --cfg configs/nankang/cascade_rcnn_hrnetv2p_w32_20e_2.py
 
 
 

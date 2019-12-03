@@ -20,6 +20,8 @@ cp generate_coco/cocos_here/annotations/instances_val2017.json ../instances_val2
 
 
 
+#Deploy可视化、结果
+python demo.py --weights ../../object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth --cfg ../configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_no_aug.py
 #可视化、结果
  python tools/test_fix.py configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py work_dirs/cascade_rcnn_hrnet_4/latest.pth --out result.pkl --eval bbox --show 
 
@@ -41,3 +43,6 @@ python tools/analyze_logs.py plot_curve work_dirs/cascade_rcnn_hrnet_4/20190629_
 python tools/compare_pkl.py 可以针对不同result_${i}.pkl找出问题。 有望进行闭环
 
 
+
+#prints :::hooks/logger/text.py
+#  almost all in   runner.py

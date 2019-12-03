@@ -206,13 +206,13 @@ img_norm_cfg = dict(
     std=[58.395, 57.12, 57.375],
     to_rgb=True)
 data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=8,
+    imgs_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_all.json",
-        img_prefix=data_root+"object_detection_data_angle_top_head/images_train/",
-        img_scale=[(960,540), (960*1.1, 540*1.1, 960*1.2, 540*1.2)],
+        ann_file=data_root+"standard_train_with_2.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_all/",
+        img_scale=[(960,540)],
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0.5,
@@ -221,8 +221,8 @@ data = dict(
         with_label=True),
     val=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_all_val.json",
-        img_prefix=data_root+"object_detection_data_angle_top_head/images_val/",
+        ann_file=data_root+"standard_val.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_all/",
         img_scale=(960, 540),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -232,10 +232,9 @@ data = dict(
         with_label=True),
     test=dict(
         type=dataset_type,
-        ann_file=data_root+"instances_all_val.json",
-        img_prefix=data_root+"object_detection_data_angle_top_head/images_val/",
-        #ann_file=data_root+"instances_val2017_4.json",
-        #img_prefix=data_root+"object_detection_data_both_side_finetunes/val_images/",
+        #ann_file=data_root+"tmp.json",
+        ann_file=data_root+"standard_val.json",
+        img_prefix=data_root+"object_detection_data_angle_top_head/images_all/",
         img_scale=(960, 540),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -244,7 +243,7 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0000)
+optimizer = dict(type='SGD', lr=0.002, momentum=0.9, weight_decay=1e-5)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -263,11 +262,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 30
+total_epochs = 15
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/car_face_retrain/'
 load_from = "coco_pretrained/coco_cascade_rcnn_hrnetv2_w32_fpn_4.pth"
 resume_from = None
-#resume_from = "./work_dirs/car_face/latest.pth"
 workflow = [('train', 1)]

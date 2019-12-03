@@ -15,28 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import seat_merge
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = "Double side...")
-    args = parser.parse_args()
-     
-    CONFIDENCE_THRESHOLD = config.get_confidence()
-    #Initialization:
-    #A:
-    print("Initializing front camera A...")
-    root_dir = "/".join(os.getcwd().split('/'))
-    A_program = A.A(root_dir, "left")
-    #B:
-    print("Initializing front camera B...")
-    B_program = A.A(root_dir, "right")
-    #C:
-    print("Initializing front camera C...")
-    C_program = A.A(root_dir, "backleft")
-    #D:
-    print("Initializing front camera D...")
-    D_program = A.A(root_dir, "backright")
-
-    car_to_car_dir = config.CAR_TO_CAR_DIR
-    cars = glob.glob(car_to_car_dir+"/*")
+def car_merge(cars, A_program, B_program, C_program, D_program):
     #删除old_days索引
     cars.sort()
     #cars.pop()
@@ -49,17 +28,23 @@ if __name__ == "__main__":
         print("\nNEW PIC" ,idx, "of", len(cars), car)
         images_both_side = glob.glob(car+"/*.png")
         images_both_side.sort()
-        images_left = images_both_side[:int((len(images_both_side)-2)/2)]
-        images_right = images_both_side[int((len(images_both_side)-2)/2):]
-        images_back = images_both_side[-2:]
+        try:
+            images_left = images_both_side[:3]
+            images_right = images_both_side[3:6]
+            images_back = images_both_side[6:]
+        except:
+            print("Not enough image in %s"%car)
+        print("Lefts:%s\n Rights:%s\n Back:%s\n"%(images_left, images_right, images_back))
+        #images_back = []
         #A_filelist = glob.glob("/home/user/left/*.jpg")
         #B_filelist = glob.glob("/home/user/right/*.jpg")
+        pos1 = pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = []
         #LEFTS:
         preds = []
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_left[0])
-        pos1, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD, time_num = 1)
+        pos1, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_left[1])
@@ -72,7 +57,7 @@ if __name__ == "__main__":
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_right[0])
-        pos4, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD, time_num=1)
+        pos4, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_right[1])
@@ -82,14 +67,14 @@ if __name__ == "__main__":
         A_image_data = camera.get_image_data(images_right[2])
         pos6, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
         #BACKS:
-        if config.VISUALIZATION:
-            plt.figure()
-        A_image_data = camera.get_image_data(images_back[0])
-        pos7, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
-        if config.VISUALIZATION:
-            plt.figure()
-        A_image_data = camera.get_image_data(images_back[1])
-        pos8, A_plt = D_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        #if config.VISUALIZATION:
+        #    plt.figure()
+        #A_image_data = camera.get_image_data(images_back[0])
+        #pos7, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        #if config.VISUALIZATION:
+        #    plt.figure()
+        #A_image_data = camera.get_image_data(images_back[1])
+        #pos8, A_plt = D_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
 
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
@@ -129,4 +114,30 @@ if __name__ == "__main__":
         print("Number score by vote:", number_score_by_vote/all_num)
     except:
         print("Prohaps too few to print")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Double side...")
+    args = parser.parse_args()
+     
+    CONFIDENCE_THRESHOLD = config.get_confidence()
+    #Initialization:
+    #A:
+    print("Initializing front camera A...")
+    root_dir = "/".join(os.getcwd().split('/'))
+    A_program = A.A(root_dir, "left")
+    #B:
+    print("Initializing front camera B...")
+    B_program = A.A(root_dir, "right")
+    #C:
+    print("Initializing front camera C...")
+    C_program = A.A(root_dir, "backleft")
+    #D:
+    print("Initializing front camera D...")
+    D_program = A.A(root_dir, "backright")
+
+    car_to_car_dir = config.CAR_TO_CAR_DIR
+    cars = glob.glob(car_to_car_dir+"/*")
+
+    embed()
+    car_merge(cars, A_program, B_program, C_program, D_program)
 

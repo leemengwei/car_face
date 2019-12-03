@@ -16,6 +16,13 @@ cp generate_coco/cocos_here/annotations/instances_train2017.json ../instances_tr
 cp generate_coco/cocos_here/annotations/instances_val2017.json ../instances_val2017_4.json
 
 
+
+
+
+
+
+
+
 #分布式训练
 ./tools/dist_train.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py 2 --validate
 ./tools/dist_train.sh configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py 2 --validate

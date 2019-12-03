@@ -10,6 +10,7 @@ from ..registry import DETECTORS
 from mmdet.core import (bbox_mapping, multiclass_nms, box_results_with_nms_and_limit, merge_aug_bboxes)
 from mmdet.core import (build_assigner, bbox2roi, bbox2result, build_sampler,
                         merge_aug_masks)
+from IPython import embed
 
 @DETECTORS.register_module
 class CascadeRCNN(BaseDetector, RPNTestMixin):

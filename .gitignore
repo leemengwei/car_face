@@ -139,3 +139,5 @@ __pycache__
 *.egg
 
 history_refs*
+images_all
+car_to_car

@@ -112,6 +112,7 @@ def show_result(img, result, class_names, score_thr=0.3, out_file=None):
         out_file (str, optional): If specified, the visualization result will
             be written to the out file instead of shown in a window.
     """
+    #print("Using conf:", score_thr)   #doesn't work
     assert isinstance(class_names, (tuple, list))
     img = mmcv.imread(img)
     if isinstance(result, tuple):

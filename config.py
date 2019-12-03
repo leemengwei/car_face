@@ -22,7 +22,7 @@ def night_cast():
 
 def get_confidence(): 
     #CONFIDENCE_THRESHOLD = 0.63   #retrain with conf 0.53 to get 2.87 with old data.
-    CONFIDENCE_THRESHOLD = 0.14   #retrain with conf 0.14 to get 2.87 with old data more neg.
+    CONFIDENCE_THRESHOLD = 0.49   #retrain with conf 0.14 to get 2.87 with old data more neg.
     if night_cast():
         #CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半  #will depracate in next version
         pass
@@ -48,7 +48,7 @@ CONFIDENCE_THRESHOLD = get_confidence()
 SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_finetunes/model_best.pt"   
 #检测模型
 MMD_CONFIG = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py"
-MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_18_287_more_neg.pth"
+MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_7_head944_conf049.pth"
 #白天+晚上的模型（不区分左右） will depracate in next version
 #MMD_CONFIG_NIGHT = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py" #will depracate in next version
 #MMD_WEIGHTS_NIGHT = "object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth"  #will depracate in next version
@@ -56,7 +56,7 @@ MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_18_287
 
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-PARALLEL_MODE = True
+#PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 
@@ -65,7 +65,7 @@ if PARALLEL_MODE:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/mfs/home/limengwei/car_face/shanghai_data/round2/backclear/"
+CAR_TO_CAR_DIR = "/mfs/home/limengwei/car_face/car_face/car_to_car/"
 #CAR_TO_CAR_DIR = "/home/user/list/"
 
 
