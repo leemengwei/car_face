@@ -78,7 +78,7 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
 
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
-        car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "front_and_back")
+        #car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "front_and_back")
         car_result_label = list(set(np.array(os.popen("cat %s/*.json|grep head|grep label|cut -c 21|sort|uniq"%car.replace(' ','\ ')).read().split()).astype(int)))
         print("Label this car:", car_result_label)
         if len(car_result_label)==0:
@@ -138,6 +138,5 @@ if __name__ == "__main__":
     car_to_car_dir = config.CAR_TO_CAR_DIR
     cars = glob.glob(car_to_car_dir+"/*")
 
-    embed()
     car_merge(cars, A_program, B_program, C_program, D_program)
 
