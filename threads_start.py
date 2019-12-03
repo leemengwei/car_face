@@ -152,7 +152,7 @@ def algorithm_detection_and_merge(workers, \
         #pos = pos1 + pos2 + pos3 + pos4 + pos5 + pos6 + pos7 + pos8  #move to seat merge, will depracate in next version
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union") 
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="vote") 
-        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="front_and_back")
+        #predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="front_and_back")
     else:
         print("Running in serial mode with bug...")
         start_time = time.time()

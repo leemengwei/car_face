@@ -22,7 +22,7 @@ def night_cast():
 
 def get_confidence(): 
     #CONFIDENCE_THRESHOLD = 0.63   #retrain with conf 0.53 to get 2.87 with old data.
-    CONFIDENCE_THRESHOLD = 0.49   #retrain with conf 0.14 to get 2.87 with old data more neg.
+    CONFIDENCE_THRESHOLD = 0.49
     if night_cast():
         #CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半  #will depracate in next version
         pass
@@ -39,8 +39,6 @@ VISUALIZATION        = True
 UNVEIL               = False
 UNVEIL               = True
 
-IGNORE_5 = False
-IGNORE_5 = True
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
 CONFIDENCE_THRESHOLD = get_confidence()   
 
@@ -65,8 +63,10 @@ if PARALLEL_MODE:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/mfs/home/limengwei/car_face/car_face/car_to_car/"
+CAR_TO_CAR_DIR = "./car_to_car"
 #CAR_TO_CAR_DIR = "/home/user/list/"
 
+IGNORE_5 = True
+#IGNORE_5 = False
 
 ######################MMD:

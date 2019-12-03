@@ -74,10 +74,6 @@ class A(camera):
         classes = config.CLASSES_4
         with no_grad():
             objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
-            #objs_indexes = [6 if x==1 else x for x in objs_indexes]   #replace 1 with 6
-            #objs_indexes = [1 if x==0 else x for x in objs_indexes]  #replace 0 with 1
-            #objs_indexes = [0 if x==6 else x for x in objs_indexes]   #replace 6 with 0
-            #print("Warning here a bug!")  #TODO: MUST FIX and may not depracate in next version!
             print("Detection(%s-%s):"%(self.side, self.time_num), objs_indexes, objs_scores)
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
@@ -241,12 +237,23 @@ class A(camera):
         top_xc = ((top_x1+top_x2)/2).reshape(-1)
         top_yc = ((top_y1+top_y2)/2).reshape(-1)
         heads_keep_idx = []
+        #Judge if big enough
+        head_heights = heads_y2s-heads_y1s 
+        head_widths = heads_x2s-heads_x1s  
+        where_too_small = ~np.add(~(head_heights<40) , ~(head_widths<40))
+        heads_x1s = heads_x1s[~where_too_small]
+        heads_x2s = heads_x2s[~where_too_small]
+        heads_y1s = heads_y1s[~where_too_small]
+        heads_y2s = heads_y2s[~where_too_small]
+        if len(np.where(where_too_small==True)[0])>=1:
+            print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
         for idx in range(len(heads_x1s)):
             head_x_center = ((heads_x1s[idx]+heads_x2s[idx])/2).reshape(-1)
             head_y_center = ((heads_y1s[idx]+heads_y2s[idx])/2).reshape(-1)
             #判断是否在窗内:
             if (head_y_center>min(angle_yc, top_yc) and head_y_center<max(angle_yc, top_yc)):    #上下超出做drop
-                heads_keep_idx.append(idx)
+                if (head_x_center>min(angle_xc, top_xc) and head_x_center<max(angle_xc, top_xc)):    #zuoyou超出做drop
+                    heads_keep_idx.append(idx)
             else:
                 print("Outside head dropped...")
                 pass    #车窗外舍弃
@@ -324,7 +331,6 @@ class A(camera):
         #print(image_data.min(), image_data.mean(), image_data.max())
         #判定当前全局信号，GPU是否开始检测
         #Preprocess cam data:
-        #angle_cam_frame = self.preprocess_cam_frame(image_data)   #Will deprecate in next version
         net_cam_frame = image_data*255
         #print(image_data.min(), image_data.mean(), image_data.max())
         start_time = time.time()

@@ -195,7 +195,7 @@ test_cfg = dict(
     rcnn=dict(
         score_thr=0.05,
         #nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05),    #Strange, soft will cause exlabelImg duplicate bbox
-        nms=dict(type='nms', iou_thr=0.5),
+        nms=dict(type='nms', iou_thr=0.1),
         max_per_img=100),
     #bbox_vote=dict(enable=True, vote_th=0.9),
     keep_all_stages=False)
