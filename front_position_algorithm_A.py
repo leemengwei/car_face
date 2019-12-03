@@ -240,7 +240,7 @@ class A(camera):
         #Judge if big enough
         head_heights = heads_y2s-heads_y1s 
         head_widths = heads_x2s-heads_x1s  
-        where_too_small = ~np.add(~(head_heights<40) , ~(head_widths<40))
+        where_too_small = ~np.add(~(head_heights<config.TOO_SMALL_HEIGHT) , ~(head_widths<config.TOO_SMALL_WIDTH))
         heads_x1s = heads_x1s[~where_too_small]
         heads_x2s = heads_x2s[~where_too_small]
         heads_y1s = heads_y1s[~where_too_small]
