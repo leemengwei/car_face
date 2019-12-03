@@ -180,16 +180,24 @@ class A(camera):
         #强制就绪两个标识物,(强制就绪意在解决明明有但没检测到的情况，包括车超出画面的情况,也会被强制就绪)
         if self.side is "left":
             if (len(angle_score)==1 and len(top_score)==0):
-                top_x1 = angle_x1+685.0948918547668
-                top_y1 = angle_y1-125.42961902952528
-                top_x2 = angle_x2+660.4268173950429
-                top_y2 = angle_y2-159.48261207951592
+                #top_x1 = angle_x1+685.0948918547668
+                #top_y1 = angle_y1-125.42961902952528
+                #top_x2 = angle_x2+660.4268173950429
+                #top_y2 = angle_y2-159.48261207951592
+                top_x1 = angle_x1+650
+                top_y1 = angle_y1-200
+                top_x2 = top_x1+100
+                top_y2 = top_y1-100
                 top_score = np.array([0]).reshape(-1,1)
             elif (len(angle_score)==0 and len(top_score)==1):
-                angle_x1 = top_x1-685.0948918547668
-                angle_y1 = top_y1+125.42961902952528
-                angle_x2 = top_x2-660.4268173950429
-                angle_y2 = top_y2+159.48261207951592
+                #angle_x1 = top_x1-685.0948918547668
+                #angle_y1 = top_y1+125.42961902952528
+                #angle_x2 = top_x2-660.4268173950429
+                #angle_y2 = top_y2+159.48261207951592
+                angle_x1 = top_x1-650
+                angle_y1 = top_y1+200
+                angle_x2 = angle_x1-100
+                angle_y2 = angle_y1+100
                 angle_score = np.array([0]).reshape(-1,1)
             elif (len(angle_score)==0 and len(top_score)==0):   #对于两个标识物一个都没有的情况，则状态变为无框帧
                 frame_status = "NoRefs"
@@ -200,16 +208,24 @@ class A(camera):
                     pass    #或者都刚好有一个的情况，不处理。
         elif self.side is "right":
             if (len(angle_score)==1 and len(top_score)==0):
-                top_x1 = angle_x1-579.6467673760624
-                top_y1 = angle_y1-98.41134448029959
-                top_x2 = angle_x2-442.5618252549455
-                top_y2 = angle_y2-124.53897522533538
+                #top_x1 = angle_x1-579.6467673760624
+                #top_y1 = angle_y1-98.41134448029959
+                #top_x2 = angle_x2-442.5618252549455
+                #top_y2 = angle_y2-124.53897522533538
+                top_x1 = angle_x1-650
+                top_y1 = angle_y1-200
+                top_x2 = top_x1-100
+                top_y2 = top_y1-100
                 top_score = np.array([0]).reshape(-1,1)
             elif (len(angle_score)==0 and len(top_score)==1):
-                angle_x1 = top_x1+579.6467673760624
-                angle_y1 = top_y1+98.41134448029959
-                angle_x2 = top_x2+442.5618252549455
-                angle_y2 = top_y2+124.53897522533538
+                #angle_x1 = top_x1+579.6467673760624
+                #angle_y1 = top_y1+98.41134448029959
+                #angle_x2 = top_x2+442.5618252549455
+                #angle_y2 = top_y2+124.53897522533538
+                angle_x1 = top_x1+650
+                angle_y1 = top_y1+200
+                angle_x2 = angle_x1+100
+                angle_y2 = angle_y1+100
                 #data.loc[right]['ref1_y2'].mean()-data.loc[right]['ref2_y2'].mean()
                 angle_score = np.array([0]).reshape(-1,1)
             elif (len(angle_score)==0 and len(top_score)==0):  #对于两个标识物一个都没有的情况，则状态变为无框帧
@@ -245,18 +261,18 @@ class A(camera):
         heads_x2s = heads_x2s[~where_too_small]
         heads_y1s = heads_y1s[~where_too_small]
         heads_y2s = heads_y2s[~where_too_small]
+        #Drop if too small:
         if len(np.where(where_too_small==True)[0])>=1:
             print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
+        #Drop if outside:
         for idx in range(len(heads_x1s)):
             head_x_center = ((heads_x1s[idx]+heads_x2s[idx])/2).reshape(-1)
             head_y_center = ((heads_y1s[idx]+heads_y2s[idx])/2).reshape(-1)
             #判断是否在窗内:
-            if (head_y_center>min(angle_yc, top_yc) and head_y_center<max(angle_yc, top_yc)):    #上下超出做drop
-                if (head_x_center>min(angle_xc, top_xc) and head_x_center<max(angle_xc, top_xc)):    #zuoyou超出做drop
+            if (head_y_center>min(angle_yc, top_yc) and head_y_center<max(angle_yc, top_yc)):  # and (head_x_center>min(angle_xc, top_xc) and head_x_center<max(angle_xc, top_xc)):    #上下ok zuoyou ok.
                     heads_keep_idx.append(idx)
             else:
                 print("Outside head dropped...")
-                pass    #车窗外舍弃
         heads_x1s = heads_x1s[heads_keep_idx]
         heads_y1s = heads_y1s[heads_keep_idx]
         heads_x2s = heads_x2s[heads_keep_idx]
@@ -285,7 +301,7 @@ class A(camera):
                         inputs = FloatTensor(np.hstack((inputs_tmp[i], head_pos))).view(-1,12)
                         position_probabilities, position = spatial_in_seat_train_and_test.frame_in_seat(self.net_spatial, inputs)
                         i = 0
-                        #如果该位置已经坐人了：
+                        #如果该位置已经坐人了：  #TODO: for No1 if it's taken, take it again. For others, caution.
                         while position in positions_peer_side.keys():
                             i += 1
                             if positions_peer_side[position][0,position-1] >= position_probabilities[0,position-1]:   #如果先前的结果比较确定
