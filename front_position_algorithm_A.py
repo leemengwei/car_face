@@ -149,6 +149,23 @@ class A(camera):
         tops_scores = refs_scores[np.where(refs_label_names==top_name)]
         angle_score = np.array([])
         top_score = np.array([])
+        #Drop small ones, and then make pair
+        top_widths = tops_x2s-tops_x1s
+        top_heights = tops_y2s-tops_y1s
+        where_too_small = ~np.add(~(top_heights<config.TOP_TOO_SMALL) , ~(top_widths<config.TOP_TOO_SMALL))
+        tops_x1s = tops_x1s[~where_too_small]
+        tops_x2s = tops_x2s[~where_too_small]
+        tops_y1s = tops_y1s[~where_too_small]
+        tops_y2s = tops_y2s[~where_too_small]
+        tops_scores = tops_scores[~where_too_small]
+        angle_widths = angles_x2s-angles_x1s
+        angle_heights = angles_y2s-angles_y1s
+        where_too_small = ~np.add(~(angle_heights<config.ANGLE_TOO_SMALL) , ~(angle_widths<config.ANGLE_TOO_SMALL))
+        angles_x1s = angles_x1s[~where_too_small]
+        angles_x2s = angles_x2s[~where_too_small]
+        angles_y1s = angles_y1s[~where_too_small]
+        angles_y2s = angles_y2s[~where_too_small]
+        angles_scores = angles_scores[~where_too_small]
         #标识物检测angle不能超过一个
         if len(angles_scores)>1:
             which_more_sure = np.argmax(angles_scores)
@@ -184,8 +201,8 @@ class A(camera):
                 #top_y1 = angle_y1-125.42961902952528
                 #top_x2 = angle_x2+660.4268173950429
                 #top_y2 = angle_y2-159.48261207951592
-                top_x1 = angle_x1+650
-                top_y1 = angle_y1-200
+                top_x1 = angle_x1+config.WINDOW_WIDTH
+                top_y1 = angle_y1-config.WINDOW_HEIGHT
                 top_x2 = top_x1+100
                 top_y2 = top_y1-100
                 top_score = np.array([0]).reshape(-1,1)
@@ -194,8 +211,8 @@ class A(camera):
                 #angle_y1 = top_y1+125.42961902952528
                 #angle_x2 = top_x2-660.4268173950429
                 #angle_y2 = top_y2+159.48261207951592
-                angle_x1 = top_x1-650
-                angle_y1 = top_y1+200
+                angle_x1 = top_x1-config.WINDOW_WIDTH
+                angle_y1 = top_y1+config.WINDOW_HEIGHT
                 angle_x2 = angle_x1-100
                 angle_y2 = angle_y1+100
                 angle_score = np.array([0]).reshape(-1,1)
@@ -212,8 +229,8 @@ class A(camera):
                 #top_y1 = angle_y1-98.41134448029959
                 #top_x2 = angle_x2-442.5618252549455
                 #top_y2 = angle_y2-124.53897522533538
-                top_x1 = angle_x1-650
-                top_y1 = angle_y1-200
+                top_x1 = angle_x1-config.WINDOW_WIDTH
+                top_y1 = angle_y1-config.WINDOW_HEIGHT
                 top_x2 = top_x1-100
                 top_y2 = top_y1-100
                 top_score = np.array([0]).reshape(-1,1)
@@ -222,8 +239,8 @@ class A(camera):
                 #angle_y1 = top_y1+98.41134448029959
                 #angle_x2 = top_x2+442.5618252549455
                 #angle_y2 = top_y2+124.53897522533538
-                angle_x1 = top_x1+650
-                angle_y1 = top_y1+200
+                angle_x1 = top_x1+config.WINDOW_WIDTH
+                angle_y1 = top_y1+config.WINDOW_HEIGHT
                 angle_x2 = angle_x1+100
                 angle_y2 = angle_y1+100
                 #data.loc[right]['ref1_y2'].mean()-data.loc[right]['ref2_y2'].mean()
@@ -243,20 +260,15 @@ class A(camera):
            if len(angle_x1)==1 and len(top_x1)==1:
                pass
            else:
-               frame_status = "BackRefsNotEnough"
+               frame_status = "BackRefsBadStatus"
         return angle_x1, angle_y1, angle_x2, angle_y2, \
                top_x1, top_y1, top_x2, top_y2, \
                angle_score, top_score, angle_name, top_name, frame_status
     def check_heads_outputs(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2):
-        angle_xc = ((angle_x1+angle_x2)/2).reshape(-1)
-        angle_yc = ((angle_y1+angle_y2)/2).reshape(-1)
-        top_xc = ((top_x1+top_x2)/2).reshape(-1)
-        top_yc = ((top_y1+top_y2)/2).reshape(-1)
-        heads_keep_idx = []
-        #Judge if big enough
+        #Judge if head big enough
         head_heights = heads_y2s-heads_y1s 
         head_widths = heads_x2s-heads_x1s  
-        where_too_small = ~np.add(~(head_heights<config.TOO_SMALL_HEIGHT) , ~(head_widths<config.TOO_SMALL_WIDTH))
+        where_too_small = ~np.add(~(head_heights<config.HEAD_TOO_SMALL) , ~(head_widths<config.HEAD_TOO_SMALL))
         heads_x1s = heads_x1s[~where_too_small]
         heads_x2s = heads_x2s[~where_too_small]
         heads_y1s = heads_y1s[~where_too_small]
@@ -265,14 +277,24 @@ class A(camera):
         if len(np.where(where_too_small==True)[0])>=1:
             print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
         #Drop if outside:
-        for idx in range(len(heads_x1s)):
-            head_x_center = ((heads_x1s[idx]+heads_x2s[idx])/2).reshape(-1)
-            head_y_center = ((heads_y1s[idx]+heads_y2s[idx])/2).reshape(-1)
-            #判断是否在窗内:
-            if (head_y_center>min(angle_yc, top_yc) and head_y_center<max(angle_yc, top_yc)):  # and (head_x_center>min(angle_xc, top_xc) and head_x_center<max(angle_xc, top_xc)):    #上下ok zuoyou ok.
-                    heads_keep_idx.append(idx)
-            else:
-                print("Outside head dropped...")
+        angle_xc = ((angle_x1+angle_x2)/2).reshape(-1)
+        angle_yc = ((angle_y1+angle_y2)/2).reshape(-1)
+        top_xc = ((top_x1+top_x2)/2).reshape(-1)
+        top_yc = ((top_y1+top_y2)/2).reshape(-1)
+        heads_x_center = (heads_x1s+heads_x2s)/2
+        heads_y_center = (heads_y1s+heads_y2s)/2
+        if self.side is "left":
+            left_right_within = heads_x_center>angle_xc
+        elif self.side is "right":
+            left_right_within = heads_x_center>top_xc
+        else:   #side is back
+            print("This check function should not be called in backside")
+            sys.exit()
+        up_down_within = ~np.add(~(heads_y_center<angle_yc), ~(heads_y_center>top_yc))
+        where_within = ~np.add(~up_down_within, ~left_right_within)
+        heads_keep_idx = np.where(where_within==True)[0]
+        if len(heads_keep_idx)-len(heads_x_center)!=0:
+            print("There are %s outside head dropped..."%(len(heads_x_center)-len(heads_keep_idx)))
         heads_x1s = heads_x1s[heads_keep_idx]
         heads_y1s = heads_y1s[heads_keep_idx]
         heads_x2s = heads_x2s[heads_keep_idx]
@@ -280,57 +302,65 @@ class A(camera):
         return heads_x1s, heads_y1s, heads_x2s, heads_y2s
     def get_spatial_in_seat_position(self, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s):
         if len(heads_x1s)==0:   #如果：没人头
-            if len(angle_x1)!=0 or len(top_x1)!=0:   #但出现了标识物
-                status = "No head, but must have car,"
-                return [1,], status    #肯定有车，所以肯定有司机
-            else:    #连标识物都没有
-                status = "SHOULD_NOT_BE_HERE!!..............will depracate in next version 1"
-                return [0,], status    #那就算了,什么都没有
+            status = "No head, but must have car,"
+            return [1,], status    #肯定有车，所以肯定有司机
         else:                   #如果:有人头
-            if len(angle_x1)==1 and len(top_x1)==1:  #并且刚好标识物各有一个,运行神经网络
-                #生成输入矩阵 n×12维度， n是人头个数
-                if "back" in self.side:
-                    #仅以区分前后映射空间的不同
-                    inputs_tmp = np.tile(np.array([-angle_x1, -angle_y1, -angle_x2, -angle_y2, -top_x1, -top_y1, -top_x2, -top_y2]).reshape(-1), (len(heads_x1s),1))
-                else:
-                    inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
-                positions_peer_side = {}
-                with no_grad():
-                    for i in range(len(heads_x1s)):
-                        head_pos = np.array([heads_x1s[i], heads_y1s[i], heads_x2s[i], heads_y2s[i]])
-                        inputs = FloatTensor(np.hstack((inputs_tmp[i], head_pos))).view(-1,12)
-                        position_probabilities, position = spatial_in_seat_train_and_test.frame_in_seat(self.net_spatial, inputs)
-                        i = 0
-                        #如果该位置已经坐人了：  #TODO: for No1 if it's taken, take it again. For others, caution.
-                        while position in positions_peer_side.keys():
-                            i += 1
-                            if positions_peer_side[position][0,position-1] >= position_probabilities[0,position-1]:   #如果先前的结果比较确定
-                                position = (-position_probabilities).argsort()[0][i]+1   #则取一个新的信任位置给目前的结果。
-                            else:          #如果目前的结果更为确定
-                                tmp_probabilities = positions_peer_side[position]   #把先前的概率序列取出
-                                tmp_position = (-tmp_probabilities).argsort()[0][i]+1   #给一个第二信任的位置给之前的结果。
-                                positions_peer_side[position] = position_probabilities   #改掉之前的结果
-                                position = tmp_position     #把之前的给成现在的，就好像恰好后得到这个量一样
-                                position_probabilities = tmp_probabilities   #把之前的给成现在的，就好像恰好后得到这个量一样
-                                #positions_peer_side[tmp_position] = tmp_probabilities   #更改先前的入座结果
-                        positions_peer_side[position] = position_probabilities   #只有当position不再出现过，才可以赋值进去
-                #Add in driver.
-                positions_peer_side[1]="666" if 1 not in positions_peer_side.keys() else positions_peer_side[1]
-                _result_ = list(positions_peer_side.keys())
-                status = "Predicted"
-                return _result_, status
-            elif len(angle_x1)==0 and len(top_x1)==0:   #没有任何标识物
-                if config.night_cast():
-                    possible_seat = [1,2,3,4,5]  #将从经验位置顺序里直接取
-                    _result_ = possible_seat[:len(heads_x1s)]
-                    status = "SHOULD_NOT_BE_HERE!!...........will depracate in next version 2"
-                else:
-                    _result_ = [0,]
-                    status = "SHOULD_NOT_BE_HERE!!...........will depracate in next version 3"
-                return _result_, status 
+            #生成输入矩阵 n×12维度， n是人头个数
+            if "back" in self.side:
+                #仅以区分前后映射空间的不同
+                inputs_tmp = np.tile(np.array([-angle_x1, -angle_y1, -angle_x2, -angle_y2, -top_x1, -top_y1, -top_x2, -top_y2]).reshape(-1), (len(heads_x1s),1))
             else:
-                print("SHOULD_NOT_BE_HERE!!............will depracate ?????")   #之前已经强制就绪了两个标识物，要么都有要么都没有，不该出现这种情况。
-                sys.exit()
+                inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
+            positions_peer_side = {}
+            position_probabilities_list = []
+            position_list = []
+            with no_grad():
+                for i in range(len(heads_x1s)):
+                    head_pos = np.array([heads_x1s[i], heads_y1s[i], heads_x2s[i], heads_y2s[i]])
+                    inputs = FloatTensor(np.hstack((inputs_tmp[i], head_pos))).view(-1,12)
+                    position_probabilities, position = spatial_in_seat_train_and_test.frame_in_seat(self.net_spatial, inputs)
+                    position_probabilities_list.append(position_probabilities)
+                    position_list.append(position)
+            pos_raw = list(np.argmax(position_probabilities_list, axis=1)+1)
+            status = "Predicted"
+            counter = np.array([pos_raw.count(i+1) for i in range(config.NUM_OF_SEATS_PEER_CAR)])
+            #print(counter)
+            for where_multi,i in enumerate(counter):
+                where_multi+=1
+                if i<=1:
+                    continue
+                print("raw taken:", pos_raw)
+                status = "Modified"
+                #all else:
+                if self.side is "left":
+                    if where_multi==1:pass    #multi No1 is okay
+                    if where_multi==2:        #multi No2 at left is actually 3
+                        pos_raw += [3]
+                    if where_multi==3:        #multi No3 at left, as 2
+                        pos_raw += [2]
+                    if where_multi==4:pass    #multi No4 at left must FP, pass
+                    if where_multi==5:        #multi No5 at left is actually 3
+                        pos_raw += [3]
+                elif self.side is "right":
+                    if where_multi==1:pass    #multi No1 is okay
+                    if where_multi==2:        #multi No2 at right is actually 5
+                        pos_raw += [5]
+                    if where_multi==3:pass        #multi No3 at right must FP, pass
+                    if where_multi==4:
+                        pos_raw += [5]   #multi No4 at right is actually 5
+                    if where_multi==5:        #multi No5 at right, as 2
+                        pos_raw += [2]
+                else:    # self.side is 'backleft or backright':
+                    if where_multi==1:pass
+                    if where_multi==2:pass
+                    if where_multi==3:pass
+                    if where_multi==4:pass
+                    if where_multi==5:pass
+            pos_taken = list(set(pos_raw+[1]))
+            #print(pos_taken)
+            _result_ = list(pos_taken)
+            #embed()
+            return _result_, status
 
     def ignore_5(self, positions_peer_side):
         move_to_seat = 3 if self.side == 'left' else 4
@@ -354,36 +384,39 @@ class A(camera):
         refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLD)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
-        if self.time_num == 1:
+        if self.time_num == 1 and 'back' not in self.side:
             refs_info = np.array([list(angle_x1), list(angle_y1), list(angle_x2), list(angle_y2), list(top_x1), list(top_y1), list(top_x2), list(top_y2)])
             np.savetxt("./history_refs_%s"%self.side, refs_info.reshape(-1))   #首帧refs将会在每次threads调用时清除
             #print("history refs saved")
         #前侧则：
         if self.side == "left" or self.side =="right":
             if frame_status == "ok":    #识别或补充到两个标识物才是ok
-                #对人头的经验审查与修补（纵向超高的）：
+                #对人头的经验审查与修补：
                 heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2) 
-                #位置判别网络：
+                #位置判别：
                 positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
                 #暂时忽略5位置
                 if config.IGNORE_5:
                     positions_peer_side = self.ignore_5(positions_peer_side)
             elif frame_status == "NoRefs":   #此时都没有车，根据左右直接猜
-                status = "Direct Guess"
+                status = "Direct Guess (%s)"%self.side
                 positions_peer_side = [1, 2, 3, 5, 4][:min(len(heads_x1s),5)] if self.side == 'left' else [1, 2, 3, 4, 5][:min(len(heads_x1s),5)]
                 positions_peer_side = [0,] if len(positions_peer_side)==0 else positions_peer_side
             else:
                 status = "Frame Skipped since (%s)"%frame_status
                 positions_peer_side = [0,]
         #是后侧
-        else:  
-            #目前后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
-            status = "Direct guess"
+        else:
+            #if frame_status == "ok":  #定位后侧，必须要求从文件读到了两个参考点
+            #    positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
+            #else:
+            #后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
+            status = "Direct guess (%s)"%self.side
             if self.side == "backleft":
-                positions_peer_side = [4, 3, 5, 1, 2][:min(len(heads_x1s),5)]
+                positions_peer_side = [4,4,4,4,4][:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
             else:   # self.side == "backright"
-                positions_peer_side = [3, 4, 5, 2, 1][:min(len(heads_x1s),5)]
-            positions_peer_side = [0,] if len(positions_peer_side)==0 else positions_peer_side
+                positions_peer_side = [3,3,3,3,3][:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
+            positions_peer_side = [] if len(positions_peer_side)==0 else positions_peer_side
         time_used = time.time() - start_time
         print("Localization(%s-%s):"%(self.side, self.time_num), status, "***", positions_peer_side, "***")
 
@@ -399,20 +432,20 @@ class A(camera):
             if UNVEIL:
                 currentAxis = plt.gca()
                 angle_color = 'r' if angle_score != 0 else 'blue'
-                rect_1 = matplotlib.patches.Rectangle((angle_x1, angle_y1), angle_x2-angle_x1, angle_y2-angle_y1, linewidth=1, edgecolor=angle_color, facecolor=angle_color, alpha=0.4)
+                rect_1 = matplotlib.patches.Rectangle((angle_x1, angle_y1), angle_x2-angle_x1, angle_y2-angle_y1, linewidth=2, edgecolor=angle_color, fill=False)
                 top_color = 'r' if top_score != 0 else 'blue'
-                rect_2 = matplotlib.patches.Rectangle((top_x1, top_y1), top_x2-top_x1, top_y2-top_y1, linewidth=1, edgecolor=top_color, facecolor=top_color, alpha=0.4)
+                rect_2 = matplotlib.patches.Rectangle((top_x1, top_y1), top_x2-top_x1, top_y2-top_y1, linewidth=2, edgecolor=top_color, fill=False)
                 if len(angle_score)>0:
-                    ax1.text(angle_x1, angle_y1,"class:%s, score:%s"%(angle_name, np.round(angle_score,2)), color=angle_color)
+                    ax1.text(angle_x1, angle_y1,"%s,%s"%(angle_name, np.round(angle_score,2)), color=angle_color)
                     currentAxis.add_patch(rect_1)
                 if len(top_score)>0: 
-                    ax1.text(top_x1, top_y1,"class:%s, score:%s"%(top_name, np.round(top_score,2)), color=top_color)
+                    ax1.text(top_x1, top_y1,"%s,%s"%(top_name, np.round(top_score,2)), color=top_color)
                     currentAxis.add_patch(rect_2)
             #plot1中画人头：
             for heads_idx, heads_i in enumerate(heads_x1s):
                 currentAxis = plt.gca()
-                heads_rect = matplotlib.patches.Rectangle((heads_x1s[heads_idx], heads_y1s[heads_idx]), heads_x2s[heads_idx]-heads_x1s[heads_idx], heads_y2s[heads_idx]-heads_y1s[heads_idx], linewidth=1, edgecolor='green', facecolor='green', alpha=0.3)
-                ax1.text(heads_x1s[heads_idx], heads_y1s[heads_idx],"class:%s, score:%s"%(heads_names[heads_idx], np.round(heads_scores[heads_idx],2)), color=[0,1,0])
+                heads_rect = matplotlib.patches.Rectangle((heads_x1s[heads_idx], heads_y1s[heads_idx]), heads_x2s[heads_idx]-heads_x1s[heads_idx], heads_y2s[heads_idx]-heads_y1s[heads_idx], linewidth=2, edgecolor='lightgreen', fill=False)
+                ax1.text(heads_x1s[heads_idx], heads_y1s[heads_idx],"%s,%s"%(heads_names[heads_idx], np.round(heads_scores[heads_idx],2)), color=[0,1,0])
                 currentAxis.add_patch(heads_rect)
             ax1.set_title("View of Camera %s, always keep running"%self.side)
             ax1.axis('off')

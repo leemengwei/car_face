@@ -48,18 +48,23 @@ def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union
     preds = pos1 + pos2 + pos3 + pos4 + pos5 + pos6 
     predictions_merged = []
     if method == "union":
-        for pred in preds:
-            predictions_merged.append(pred)
-        predictions_merged = set(predictions_merged)
+        predictions_merged = set(preds)
     elif method == "vote":
-        for pred in preds:
-            predictions_merged.append(pred)
         seat_count = np.zeros(config.NUM_OF_SEATS_PEER_CAR)
         for i in range(1, config.NUM_OF_SEATS_PEER_CAR+1):
-            seat_count[i-1] = predictions_merged.count(i)
+            seat_count[i-1] = preds.count(i)
         predictions_merged = set(np.where(seat_count>=config.VOTE_THRESHOLD)[0]+1)
     elif method == "front_and_back":
-        predictions_merged = set(preds)
+        #Front is still vote.
+        seat_count = np.zeros(config.NUM_OF_SEATS_PEER_CAR)
+        for i in range(1, config.NUM_OF_SEATS_PEER_CAR+1):
+            seat_count[i-1] = preds.count(i)
+        front = set(np.where(seat_count>=config.VOTE_THRESHOLD)[0]+1)
+        #Add up back 3 or 4
+        back = set(pos7 + pos8) - {1} - {2}
+        predictions_merged = front.union(back)
+        if (len(predictions_merged)-len(front))>=2:
+            print("Warning, back adding:", back)
     else:
         print("Wrong method given. [union, vote]")
         sys.exit()

@@ -6,7 +6,6 @@ import argparse
 import sys, os
 from camera import camera
 import front_position_algorithm_A as A
-#import side_position_algorithm_B as B  #will depracate in next version
 import threading
 import glob
 import time
@@ -35,9 +34,6 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         except:
             print("Not enough image in %s"%car)
         print("Lefts:%s\n Rights:%s\n Back:%s\n"%(images_left, images_right, images_back))
-        #images_back = []
-        #A_filelist = glob.glob("/home/user/left/*.jpg")
-        #B_filelist = glob.glob("/home/user/right/*.jpg")
         pos1 = pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = []
         #LEFTS:
         preds = []
@@ -67,18 +63,18 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         A_image_data = camera.get_image_data(images_right[2])
         pos6, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
         #BACKS:
-        #if config.VISUALIZATION:
-        #    plt.figure()
-        #A_image_data = camera.get_image_data(images_back[0])
-        #pos7, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
-        #if config.VISUALIZATION:
-        #    plt.figure()
-        #A_image_data = camera.get_image_data(images_back[1])
-        #pos8, A_plt = D_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_back[0])
+        pos7, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_back[1])
+        pos8, A_plt = D_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
 
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
-        #car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "front_and_back")
+        car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "front_and_back")
         car_result_label = list(set(np.array(os.popen("cat %s/*.json|grep head|grep label|cut -c 21|sort|uniq"%car.replace(' ','\ ')).read().split()).astype(int)))
         print("Label this car:", car_result_label)
         if len(car_result_label)==0:
@@ -120,6 +116,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
      
     CONFIDENCE_THRESHOLD = config.get_confidence()
+    print("Using confidence:%s"%CONFIDENCE_THRESHOLD)
     #Initialization:
     #A:
     print("Initializing front camera A...")

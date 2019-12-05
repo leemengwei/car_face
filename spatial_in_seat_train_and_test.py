@@ -27,7 +27,7 @@ def frame_in_seat(model, test_data):
     output_probabilities = model(test_data)
     #print(time.time()-start_time)
     output_seat = output_probabilities.argmax(dim=1)+1
-    return output_probabilities.detach().cpu().numpy(), output_seat.detach().cpu().numpy()[0]
+    return output_probabilities.detach().cpu().numpy()[0], output_seat.detach().cpu().numpy()[0]
 
 def train(model, train_loader, optimizer, epoch):
     model.train()

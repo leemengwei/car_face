@@ -68,8 +68,8 @@ class workers_cluster():
         self.worker4 = Worker("right", 1)
         self.worker5 = Worker("right", 2)
         self.worker6 = Worker("right", 3)
-        self.worker7 = Worker("backleft")
-        self.worker8 = Worker("backright")
+        self.worker7 = Worker("backleft", 1)
+        self.worker8 = Worker("backright", 1)
         sys.stdout.flush()
         self.workers_list = [ \
                 self.worker1, \
@@ -98,7 +98,7 @@ def algorithm_detection_and_merge(workers, \
         print("Running on parallel mode...")
         start_time = time.time()
         pos = []
-        #GPU 够，6+2个并行, 1/4 2/5 3/6 7/8
+        #GPU 够，2+4+2个并行, 1/4 2/5 3/6 7/8
         #Lefts:
         _thread1 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD)
         _thread1.set_values(image_data1)
@@ -127,16 +127,17 @@ def algorithm_detection_and_merge(workers, \
 
         _thread1.join()
         _thread2.join()
-        _thread3.join()
-        _thread4.join()
-        _thread5.join()
-        _thread6.join()
         
         #print("Fronts finished, now back...")
         #sys.exit()
          #后侧进程需要用首帧的结果, 所以一定要确定前6帧完成
         _thread7.start()
         _thread8.start()
+
+        _thread3.join()
+        _thread4.join()
+        _thread5.join()
+        _thread6.join()
         _thread7.join()
         _thread8.join()
         
@@ -152,7 +153,7 @@ def algorithm_detection_and_merge(workers, \
         #pos = pos1 + pos2 + pos3 + pos4 + pos5 + pos6 + pos7 + pos8  #move to seat merge, will depracate in next version
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union") 
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="vote") 
-        #predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="front_and_back")
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="front_and_back")
     else:
         print("Running in serial mode with bug...")
         start_time = time.time()

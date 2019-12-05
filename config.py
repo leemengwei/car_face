@@ -34,8 +34,6 @@ def get_confidence():
 CLASSES_4 = ['angle', 'top', 'head']    #加入晚上数据的模型已经不区分左右了
 
 ################Options for A and B:
-VISUALIZATION        = False
-VISUALIZATION        = True
 UNVEIL               = False
 UNVEIL               = True
 
@@ -52,23 +50,27 @@ MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_7_head
 #MMD_WEIGHTS_NIGHT = "object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth"  #will depracate in next version
 #OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_full_data_465.pt"    #微调后
 
-TOO_SMALL_HEIGHT = 50
-TOO_SMALL_WIDTH = 50
+HEAD_TOO_SMALL = 60
+TOP_TOO_SMALL = 59
+ANGLE_TOO_SMALL = 58
+WINDOW_WIDTH = 650
+WINDOW_HEIGHT = 200
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-#PARALLEL_MODE = True
+PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
-
+else:
+    VISUALIZATION = True
 
 ##################Options for Seat merge:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "./car_to_car"
+CAR_TO_CAR_DIR = "./car_dir"
 #CAR_TO_CAR_DIR = "/home/user/list/"
 
 IGNORE_5 = True
-#IGNORE_5 = False
+IGNORE_5 = False
 
 ######################MMD:
