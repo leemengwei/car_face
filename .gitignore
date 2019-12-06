@@ -117,9 +117,6 @@ venv.bak/
 *.pdf
 *.history_ref_*
 
-*.cpp
-*.h
-*.hpp
 *.pro
 *.ui
 
