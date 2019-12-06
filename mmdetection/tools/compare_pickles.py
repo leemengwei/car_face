@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 from IPython import embed
 from config import *
+import os, sys
 
 score_thr = CONFIDENCE_THRESHOLD
 
@@ -33,7 +34,7 @@ def compare_and_report(which_part):
 
 
 if __name__ == "__main__":
-    filenames = ["./result_1.pkl", "./result_23.pkl"]
+    filenames = [sys.argv[1], sys.argv[2]]
     assert len(filenames)>=2, "At least two files!"
     anlges, tops, heads = {}, {}, {}
     for idx,filename in enumerate(filenames):
