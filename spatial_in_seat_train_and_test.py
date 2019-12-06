@@ -84,7 +84,7 @@ if __name__=="__main__":
     parser.add_argument('-EX', '--expander', type=int, default=1)
     parser.add_argument('-LR', '--learning_rate', type=float, default=1e-4)
     parser.add_argument('-E', '--epochs', type=int, default=100)
-    parser.add_argument('-TR', '--test_ratio', type=float, default = 0.)
+    parser.add_argument('-TR', '--test_ratio', type=float, default = 0.1)
     parser.add_argument('-BS', '--batch_size', type=int, default=100)
     parser.add_argument('-DP', '--data_path', type=str, required=True)
     args = parser.parse_args()
@@ -117,7 +117,7 @@ if __name__=="__main__":
                 pin_memory=True
                 )
         validate_loader = torch.utils.data.DataLoader( 
-                dataset=train_dataset, #validate_dataset, 
+                dataset=validate_dataset, 
                 batch_size=args.batch_size,
                 shuffle=False,
                 drop_last=True,
@@ -133,7 +133,8 @@ if __name__=="__main__":
     output_size = 5   #TODO
     model = spatial_model.NeuralNet(input_size, hidden_size, hidden_depth, output_size).to(device)
     criterion = nn.MSELoss()
-    optimizer = optim.RMSprop(model.parameters(), lr=args.learning_rate)
+    #optimizer = optim.RMSprop(model.parameters(), lr=args.learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     #Restart or not:
     if args.restart:

@@ -416,7 +416,7 @@ class A(camera):
                 positions_peer_side = [4,4,4,4,4][:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
             else:   # self.side == "backright"
                 positions_peer_side = [3,3,3,3,3][:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
-            positions_peer_side = [] if len(positions_peer_side)==0 else positions_peer_side
+            positions_peer_side = [0] if len(positions_peer_side)==0 else positions_peer_side
         time_used = time.time() - start_time
         print("Localization(%s-%s):"%(self.side, self.time_num), status, "***", positions_peer_side, "***")
 
@@ -473,7 +473,8 @@ class A(camera):
                 ax3.imshow(plt.imread(view_name))
             plt.draw()
             plt.pause(0.001)
-            #input()
+            input()
+            plt.close()
         return [positions_peer_side, plt]
 
 if __name__ == "__main__":

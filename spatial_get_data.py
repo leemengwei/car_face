@@ -18,12 +18,19 @@ def xy_order_correction(inputs, small_cols, big_cols):
     return inputs
 
 def generate_for_six_image_folder(files_list, head_names, ref_names):
+    def fix_data(data):
+        #temporary, fix rectangle generated as polygon, may delete:
+        for idx,i in enumerate(data['shapes']): 
+            if i['shape_type'] == 'polygon': 
+                data['shapes'][idx]['points'] = [data['shapes'][idx]['points'][0], data['shapes'][idx]['points'][2]]
+        return data
     paths = []
     inputs = np.empty(shape=(0, int(4*2+4+1)))   # ref_pos + head_pos + head_label
     for files in files_list:
         #within one image:
         with open(files) as f:
             data = json.load(f)
+            data = fix_data(data)
         if len(data['shapes'])<=0:
             print("Nothing founded, continue")
             continue
@@ -58,6 +65,7 @@ def generate_for_six_image_folder(files_list, head_names, ref_names):
         counter = 0
         for i in data['shapes']:
             if i['label'] in head_names:
+                print(ref_and_head_position[counter][4*2:-1], np.array(i['points']).reshape(-1))
                 ref_and_head_position[counter][4*2:-1] = np.array(i['points']).reshape(-1)
                 ref_and_head_position[counter][-1] = int(i['label'][-1])
                 paths.append(files)
@@ -134,16 +142,25 @@ def get_ref_and_heads(data_path, args):
     eight_image_files_list = []
     six_image_folders = []
     six_image_files_list = []
+    ten_image_folders = []
+    ten_image_files_list = []
     for i in image_folders: 
         num_of_pngs = glob(i+"/*.png") 
         if len(num_of_pngs)==8: 
             eight_image_folders.append(i)
+        if len(num_of_pngs)==10: 
+            ten_image_folders.append(i)
     six_image_folders = set(image_folders)   # - set(eight_image_folders)  #不用减8个的了，都可以用
     #6图的都可以用：
     for i in six_image_folders: 
         tmp = glob(i+"/*.json")
         if len(tmp)>0:
             six_image_files_list += tmp
+    #10 tu is ok as 6 tu:
+    for i in ten_image_folders: 
+        tmp = glob(i+"/*.json")
+        if len(tmp)>0:
+            ten_image_files_list += tmp
     #8图的要做特殊跨图处理：
     for i in eight_image_folders: 
         tmp = glob(i+"/*.png")
@@ -176,6 +193,11 @@ def get_ref_and_heads(data_path, args):
     print("Generating data for six image foler...")
     time.sleep(0.5)
     inputs, paths = generate_for_six_image_folder(six_image_files_list, head_names, ref_names)
+
+    print("Generating data for ten image foler...")
+    time.sleep(0.5)
+    generate_for_ten_image_folder = generate_for_six_image_folder
+    inputs, paths = generate_for_ten_image_folder(ten_image_files_list, head_names, ref_names)
 
     #Put into dataframe with name
     inputs = pd.DataFrame(inputs, index=None)
