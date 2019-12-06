@@ -473,8 +473,8 @@ class A(camera):
                 ax3.imshow(plt.imread(view_name))
             plt.draw()
             plt.pause(0.001)
-            input()
-            plt.close()
+            #input()
+            #plt.close()
         return [positions_peer_side, plt]
 
 if __name__ == "__main__":
