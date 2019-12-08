@@ -57,7 +57,7 @@ WINDOW_WIDTH = 650
 WINDOW_HEIGHT = 200
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-PARALLEL_MODE = True
+#PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:
@@ -67,7 +67,7 @@ else:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "./car_dir"
+CAR_TO_CAR_DIR = "../shanghai_data/2019-12-7Back-FP/"
 #CAR_TO_CAR_DIR = "/home/user/list/"
 
 IGNORE_5 = True

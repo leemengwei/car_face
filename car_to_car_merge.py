@@ -31,6 +31,8 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
             images_left = images_both_side[:3]
             images_right = images_both_side[3:6]
             images_back = images_both_side[6:]
+            if len(images_back)==4:
+                images_back = images_back[::2]
         except:
             print("Not enough image in %s"%car)
         print("Lefts:%s\n Rights:%s\n Back:%s\n"%(images_left, images_right, images_back))
