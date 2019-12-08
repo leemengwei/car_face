@@ -120,9 +120,9 @@ def algorithm_detection_and_merge(workers, \
         _thread6.set_values(image_data6)
         _thread6.start()
         #Backs:
-        _thread7 = thread_manager(workers_list[6], CONFIDENCE_THRESHOLD)
+        _thread7 = thread_manager(workers_list[6], config.BACK_CONFIDENCE_THRESHOLD)
         _thread7.set_values(image_data7)
-        _thread8 = thread_manager(workers_list[7], CONFIDENCE_THRESHOLD)
+        _thread8 = thread_manager(workers_list[7], config.BACK_CONFIDENCE_THRESHOLD)
         _thread8.set_values(image_data8)
 
         _thread1.join()

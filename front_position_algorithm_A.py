@@ -69,7 +69,18 @@ class A(camera):
         cfg.data.test.test_mode = True
         model = init_detector(_mmd_config, _mmd_weights)
         return model
-
+    def drop_small_heads(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s):
+        head_heights = heads_y2s-heads_y1s 
+        head_widths = heads_x2s-heads_x1s  
+        where_too_small = ~np.add(~(head_heights<config.HEAD_TOO_SMALL) , ~(head_widths<config.HEAD_TOO_SMALL))    #must satisfy both to drop. 'add' here means 'and' condition
+        #Drop if too small:
+        heads_x1s = heads_x1s[~where_too_small]
+        heads_x2s = heads_x2s[~where_too_small]
+        heads_y1s = heads_y1s[~where_too_small]
+        heads_y2s = heads_y2s[~where_too_small]
+        if len(np.where(where_too_small==True)[0])>=1:
+            print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
+        return heads_x1s, heads_y1s, heads_x2s, heads_y2s
     def get_objs_position(self, net_cam_frame, CONFIDENCE_THRESHOLD):
         classes = config.CLASSES_4
         with no_grad():
@@ -149,7 +160,7 @@ class A(camera):
         tops_scores = refs_scores[np.where(refs_label_names==top_name)]
         angle_score = np.array([])
         top_score = np.array([])
-        #Drop small ones, and then make pair
+        #Drop small refs, and then make pair of refs
         top_widths = tops_x2s-tops_x1s
         top_heights = tops_y2s-tops_y1s
         where_too_small = ~np.add(~(top_heights<config.TOP_TOO_SMALL) , ~(top_widths<config.TOP_TOO_SMALL))
@@ -266,16 +277,7 @@ class A(camera):
                angle_score, top_score, angle_name, top_name, frame_status
     def check_heads_outputs(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2):
         #Judge if head big enough
-        head_heights = heads_y2s-heads_y1s 
-        head_widths = heads_x2s-heads_x1s  
-        where_too_small = ~np.add(~(head_heights<config.HEAD_TOO_SMALL) , ~(head_widths<config.HEAD_TOO_SMALL))
-        heads_x1s = heads_x1s[~where_too_small]
-        heads_x2s = heads_x2s[~where_too_small]
-        heads_y1s = heads_y1s[~where_too_small]
-        heads_y2s = heads_y2s[~where_too_small]
-        #Drop if too small:
-        if len(np.where(where_too_small==True)[0])>=1:
-            print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
+        heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s)
         #Drop if outside:
         angle_xc = ((angle_x1+angle_x2)/2).reshape(-1)
         angle_yc = ((angle_y1+angle_y2)/2).reshape(-1)
@@ -407,6 +409,7 @@ class A(camera):
                 positions_peer_side = [0,]
         #是后侧
         else:
+            heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s)
             #if frame_status == "ok":  #定位后侧，必须要求从文件读到了两个参考点
             #    positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
             #else:

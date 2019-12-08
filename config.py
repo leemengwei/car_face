@@ -39,7 +39,7 @@ UNVEIL               = True
 
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
 CONFIDENCE_THRESHOLD = get_confidence()   
-
+BACK_CONFIDENCE_THRESHOLD = 0.9
 #定位模型
 SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_pos/model_best.pt"   
 #检测模型
@@ -57,7 +57,7 @@ WINDOW_WIDTH = 650
 WINDOW_HEIGHT = 200
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-#PARALLEL_MODE = True
+PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:

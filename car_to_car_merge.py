@@ -68,11 +68,11 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[0])
-        pos7, A_plt = C_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos7, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[1])
-        pos8, A_plt = D_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos8, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
 
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
