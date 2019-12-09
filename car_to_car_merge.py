@@ -77,6 +77,14 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
         car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "front_and_back")
+        #Offline yield txt result file.
+        with open(car+"/python_txt.txt", 'w') as f:
+            f.write("front:%s\n"% car_result_vote)
+            f.write("front and back:%s\n"%car_result_front_and_back)
+            f.write("backleft:%s\n"%pos7)
+            f.write("backright:%s\n"%pos8)
+
+
         car_result_label = list(set(np.array(os.popen("cat %s/*.json|grep head|grep label|cut -c 21|sort|uniq"%car.replace(' ','\ ')).read().split()).astype(int)))
         print("Label this car:", car_result_label)
         if len(car_result_label)==0:
