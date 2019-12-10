@@ -23,7 +23,7 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
     number_score_by_vote = 0
     number_score_by_union = 0
     all_num = 0
-    for idx, car in enumerate(cars[:]):
+    for idx, car in enumerate(cars[5:]):
         print("\nNEW PIC" ,idx, "of", len(cars), car)
         images_both_side = glob.glob(car+"/*.png")
         images_both_side.sort()
@@ -37,6 +37,12 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
             print("Not enough image in %s"%car)
         print("Lefts:%s\n Rights:%s\n Back:%s\n"%(images_left, images_right, images_back))
         pos1 = pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = []
+        try:
+            assert len(images_left)==len(images_right), "left have %s, right have %s"%(len(images_left), len(images_right))
+            assert len(images_back)==2, "back have %s"%len(images_back)
+        except Exception as e:
+            print(e)
+            continue
         #LEFTS:
         preds = []
         if config.VISUALIZATION:

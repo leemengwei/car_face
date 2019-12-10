@@ -71,8 +71,11 @@ class A(camera):
         return model
     def drop_small_heads(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s):
         head_heights = heads_y2s-heads_y1s 
-        head_widths = heads_x2s-heads_x1s  
-        where_too_small = ~np.add(~(head_heights<config.HEAD_TOO_SMALL) , ~(head_widths<config.HEAD_TOO_SMALL))    #must satisfy both to drop. 'add' here means 'and' condition
+        head_widths = heads_x2s-heads_x1s
+        if 'back' in self.side:
+            where_too_small = (head_heights<config.BACK_HEAD_TOO_SMALL)or(head_widths<config.BACK_HEAD_TOO_SMALL)
+        else:
+            where_too_small = (head_heights<config.HEAD_TOO_SMALL)&(head_widths<config.HEAD_TOO_SMALL)
         #Drop if too small:
         heads_x1s = heads_x1s[~where_too_small]
         heads_x2s = heads_x2s[~where_too_small]
@@ -335,23 +338,33 @@ class A(camera):
                 status = "Modified"
                 #all else:
                 if self.side is "left":
-                    if where_multi==1:pass    #multi No1 is okay
+                    if where_multi==1:
+                        print("multi1ok")    #multi No1 is okay
                     if where_multi==2:        #multi No2 at left is actually 3
                         pos_raw += [3]
+                        print("a 2 as 3")
                     if where_multi==3:        #multi No3 at left, as 2
-                        pos_raw += [2]
-                    if where_multi==4:pass    #multi No4 at left must FP, pass
+                        pos_raw += [5]
+                        print("a 3 as 5")
+                    if where_multi==4:
+                        print("multi4ok")    #multi No4 at left must FP, pass
                     if where_multi==5:        #multi No5 at left is actually 3
                         pos_raw += [3]
+                        print("a 5 as 3")
                 elif self.side is "right":
-                    if where_multi==1:pass    #multi No1 is okay
+                    if where_multi==1:
+                        print("multi1ok")
                     if where_multi==2:        #multi No2 at right is actually 5
                         pos_raw += [5]
-                    if where_multi==3:pass        #multi No3 at right must FP, pass
+                        print("a 2 as 5")
+                    if where_multi==3:
+                        print("multi3ok")       #multi No3 at right must FP, pass
                     if where_multi==4:
-                        pos_raw += [5]   #multi No4 at right is actually 5
+                        pos_raw += [1]   #multi No4 at right is actually 5
+                        print("a 4 as 1")
                     if where_multi==5:        #multi No5 at right, as 2
-                        pos_raw += [2]
+                        pos_raw += [4]
+                        print("a 5 as 4")
                 else:    # self.side is 'backleft or backright':
                     if where_multi==1:pass
                     if where_multi==2:pass
