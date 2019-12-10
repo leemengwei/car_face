@@ -17,7 +17,7 @@ def xy_order_correction(inputs, small_cols, big_cols):
         inputs[col2][wrong_rows] = tmp
     return inputs
 
-def generate_for_six_image_folder(files_list, head_names, ref_names):
+def generate_for_six_image_folder(json_list, head_names, ref_names):
     def fix_data(data):
         #temporary, fix rectangle generated as polygon, may delete:
         for idx,i in enumerate(data['shapes']): 
@@ -26,7 +26,7 @@ def generate_for_six_image_folder(files_list, head_names, ref_names):
         return data
     paths = []
     inputs = np.empty(shape=(0, int(4*2+4+1)))   # ref_pos + head_pos + head_label
-    for files in files_list:
+    for files in json_list:
         #within one image:
         with open(files) as f:
             data = json.load(f)
@@ -75,10 +75,68 @@ def generate_for_six_image_folder(files_list, head_names, ref_names):
         inputs = np.vstack((inputs, ref_and_head_position))
     return inputs, paths
 
-def generate_for_eight_image_folder(files_list, head_names, ref_names):
+def generate_for_no_folder_images(json_list, head_names, ref_names):
+    def fix_data(data):
+        #temporary, fix rectangle generated as polygon, may delete:
+        for idx,i in enumerate(data['shapes']): 
+            if i['shape_type'] == 'polygon': 
+                data['shapes'][idx]['points'] = [data['shapes'][idx]['points'][0], data['shapes'][idx]['points'][2]]
+        return data
     paths = []
     inputs = np.empty(shape=(0, int(4*2+4+1)))   # ref_pos + head_pos + head_label
-    for files in files_list:
+    for files in json_list:
+        #within one image:
+        with open(files) as f:
+            data = json.load(f)
+            data = fix_data(data)
+        if len(data['shapes'])<=0:
+            print("Nothing founded, continue")
+            continue
+        #First do counting, on all kinds of heads in detection list:
+        num_of_refs = 0
+        num_of_heads = 0
+        for i in data['shapes']:
+            if i['label'] in head_names:
+                num_of_heads += 1
+            elif i['label'] in ref_names:
+                num_of_refs += 1
+            else:
+                print("Unkown type %s"%i['label'])
+                if i['label']=='head6':
+                    sys.exit()
+        if num_of_refs != 2:
+            print("In file %s, Findding %s refs! Supposing two and only two!"%(files, num_of_refs))
+            continue
+        elif num_of_heads < 1:
+            print("In file %s, Findding %s heads! Supposing at least one head(dirver)!"%(files, num_of_heads))
+            continue
+        else:
+            print("In file %s, Findding %s heads and %s refs, a good sample"%(files, num_of_heads, num_of_refs))
+        #开始形成数据：
+        ref_positions = np.array([])
+        for ref_name in ref_names:
+            for i in data['shapes']:
+                if i['label'] == ref_name:
+                    ref_positions = np.hstack((ref_positions, np.array(i['points']).reshape(-1)))
+        #After check, now we get data peer image:
+        ref_and_head_position = np.hstack((np.tile(ref_positions, (num_of_heads,1)), np.tile([0,0,0,0, 0], (num_of_heads,1))))
+        counter = 0
+        for i in data['shapes']:
+            if i['label'] in head_names:
+                print(ref_and_head_position[counter][4*2:-1], np.array(i['points']).reshape(-1))
+                ref_and_head_position[counter][4*2:-1] = np.array(i['points']).reshape(-1)
+                ref_and_head_position[counter][-1] = int(i['label'][-1])
+                paths.append(files)
+                counter += 1
+            else:
+                pass
+        inputs = np.vstack((inputs, ref_and_head_position))
+    return inputs, paths
+
+def generate_for_eight_image_folder(json_list, head_names, ref_names):
+    paths = []
+    inputs = np.empty(shape=(0, int(4*2+4+1)))   # ref_pos + head_pos + head_label
+    for files in json_list:
         front, back = files[0], files[1]
         #within one image:
         data = {'shapes':[]} 
@@ -139,11 +197,12 @@ def generate_for_eight_image_folder(files_list, head_names, ref_names):
 def get_ref_and_heads(data_path, args):
     image_folders = glob("%s/*"%data_path)
     eight_image_folders = []
-    eight_image_files_list = []
+    eight_image_json_list = []
     six_image_folders = []
-    six_image_files_list = []
+    six_image_json_list = []
     ten_image_folders = []
-    ten_image_files_list = []
+    ten_image_json_list = []
+    no_folder_json_list = glob("%s/*.json"%data_path)
     for i in image_folders: 
         num_of_pngs = glob(i+"/*.png") 
         if len(num_of_pngs)==8: 
@@ -155,12 +214,12 @@ def get_ref_and_heads(data_path, args):
     for i in six_image_folders: 
         tmp = glob(i+"/*.json")
         if len(tmp)>0:
-            six_image_files_list += tmp
+            six_image_json_list += tmp
     #10 tu is ok as 6 tu:
     for i in ten_image_folders: 
         tmp = glob(i+"/*.json")
         if len(tmp)>0:
-            ten_image_files_list += tmp
+            ten_image_json_list += tmp
     #8图的要做特殊跨图处理：
     for i in eight_image_folders: 
         tmp = glob(i+"/*.png")
@@ -179,25 +238,30 @@ def get_ref_and_heads(data_path, args):
         first_right = tmp[front_idx[3]].replace(".png",".json")
 
         if os.path.exists(first_left) and os.path.exists(back_left):
-            eight_image_files_list.append([first_left, back_left])
+            eight_image_json_list.append([first_left, back_left])
         if os.path.exists(first_right) and os.path.exists(back_right):
-            eight_image_files_list.append([first_right, back_right])
+            eight_image_json_list.append([first_right, back_right])
 
     ref_names = ['angle', 'top', 'angle_r', 'top_r']   #TODO：参考物的名称
     head_names = ["head1", "head2", "head3", "head4", "head5" ]      #TODO: 类别必须形如 head1 head2 等，其中 1 2 表示固定的位置，不允许改变
 
     #六张图、八张图将根据不同的策略尝试生成数据：
-    print("Generating data for eight image foler...")
+    print("Generating data for no folder image...")
     time.sleep(0.5)
-    inputs, paths = generate_for_eight_image_folder(eight_image_files_list, head_names, ref_names)
-    print("Generating data for six image foler...")
-    time.sleep(0.5)
-    inputs, paths = generate_for_six_image_folder(six_image_files_list, head_names, ref_names)
+    inputs, paths = generate_for_no_folder_images(no_folder_json_list, head_names, ref_names)
 
-    print("Generating data for ten image foler...")
-    time.sleep(0.5)
-    generate_for_ten_image_folder = generate_for_six_image_folder
-    inputs, paths = generate_for_ten_image_folder(ten_image_files_list, head_names, ref_names)
+    #print("Generating data for eight image foler...")
+    #time.sleep(0.5)
+    #inputs, paths = generate_for_eight_image_folder(eight_image_json_list, head_names, ref_names)
+
+    #print("Generating data for six image foler...")
+    #time.sleep(0.5)
+    #inputs, paths = generate_for_six_image_folder(six_image_json_list, head_names, ref_names)
+
+    #print("Generating data for ten image foler...")
+    #time.sleep(0.5)
+    #generate_for_ten_image_folder = generate_for_six_image_folder
+    #inputs, paths = generate_for_ten_image_folder(ten_image_json_list, head_names, ref_names)
 
     #Put into dataframe with name
     inputs = pd.DataFrame(inputs, index=None)

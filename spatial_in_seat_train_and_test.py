@@ -117,7 +117,8 @@ if __name__=="__main__":
                 pin_memory=True
                 )
         validate_loader = torch.utils.data.DataLoader( 
-                dataset=validate_dataset, 
+                #dataset=validate_dataset, 
+                dataset=train_dataset, 
                 batch_size=args.batch_size,
                 shuffle=False,
                 drop_last=True,

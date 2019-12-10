@@ -19,7 +19,7 @@ for i in files:
         if len(front)!=len(front_and_back):
             print(i, front, 'vs', front_and_back)
             #print("cp %s /home/user/front_and_back_compare/ -r"%i.replace(" ","\ "))
-            os.system("cp %s /home/user/front_and_back_compare/ -r"%i.replace(" ","\ "))
+            os.system("cp /home/user/Data1/%s /home/user/front_and_back_compare_2/ -r"%i.replace(" ","\ ").strip("./car_dir/"))
     except FileNotFoundError:
         print("Skip")
 

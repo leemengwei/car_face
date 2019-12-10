@@ -73,7 +73,7 @@ class A(camera):
         head_heights = heads_y2s-heads_y1s 
         head_widths = heads_x2s-heads_x1s
         if 'back' in self.side:
-            where_too_small = (head_heights<config.BACK_HEAD_TOO_SMALL)or(head_widths<config.BACK_HEAD_TOO_SMALL)
+            where_too_small = (head_heights<config.BACK_HEAD_TOO_SMALL)|(head_widths<config.BACK_HEAD_TOO_SMALL)
         else:
             where_too_small = (head_heights<config.HEAD_TOO_SMALL)&(head_widths<config.HEAD_TOO_SMALL)
         #Drop if too small:
