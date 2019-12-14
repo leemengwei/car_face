@@ -339,7 +339,9 @@ class A(camera):
                 #all else:
                 if self.side is "left":
                     if where_multi==1:
-                        print("multi1ok")    #multi No1 is okay
+                        #print("multi1ok")    #multi No1 is okay
+                        print("left multi1 as 5")    #multi No1 is okay
+                        pos_raw += [5]
                     if where_multi==2:        #multi No2 at left is actually 3
                         pos_raw += [3]
                         print("a 2 as 3")
@@ -353,15 +355,16 @@ class A(camera):
                         print("a 5 as 3")
                 elif self.side is "right":
                     if where_multi==1:
-                        print("multi1ok")
+                        print("right multi1as4")
+                        pos_raw += [4]
                     if where_multi==2:        #multi No2 at right is actually 5
                         pos_raw += [5]
                         print("a 2 as 5")
                     if where_multi==3:
                         print("multi3ok")       #multi No3 at right must FP, pass
                     if where_multi==4:
-                        pos_raw += [1]   #multi No4 at right is actually 5
-                        print("a 4 as 1")
+                        pos_raw += [5]   #multi No4 at right is actually 5
+                        print("a 4 as 5")
                     if where_multi==5:        #multi No5 at right, as 2
                         pos_raw += [4]
                         print("a 5 as 4")
@@ -371,6 +374,8 @@ class A(camera):
                     if where_multi==3:pass
                     if where_multi==4:pass
                     if where_multi==5:pass
+            if 5 in pos_raw:
+                pos_raw = pos_raw+[3]+[4]
             pos_taken = list(set(pos_raw+[1]))
             #print(pos_taken)
             _result_ = list(pos_taken)
@@ -381,6 +386,7 @@ class A(camera):
         move_to_seat = 3 if self.side == 'left' else 4
         try:
             positions_peer_side[np.where(np.array(positions_peer_side)==5)[0][0]]=move_to_seat
+            print("Moving 5 to %s"%move_to_seat)
         except:
             pass
         return positions_peer_side

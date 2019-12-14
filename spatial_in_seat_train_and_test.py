@@ -84,7 +84,7 @@ if __name__=="__main__":
     parser.add_argument('-EX', '--expander', type=int, default=1)
     parser.add_argument('-LR', '--learning_rate', type=float, default=1e-4)
     parser.add_argument('-E', '--epochs', type=int, default=100)
-    parser.add_argument('-TR', '--test_ratio', type=float, default = 0.1)
+    parser.add_argument('-TR', '--test_ratio', type=float, default = 0.2)
     parser.add_argument('-BS', '--batch_size', type=int, default=100)
     parser.add_argument('-DP', '--data_path', type=str, required=True)
     args = parser.parse_args()
@@ -103,9 +103,8 @@ if __name__=="__main__":
     if args.epochs>=0:
         data, paths = get_data.get_ref_and_heads(args.data_path, args)
         data, pahts = get_data.mannual_feature(data, paths, args)
-        #embed()
         inputs = torch.FloatTensor(data[input_columns].values)
-        targets = torch.FloatTensor(data[target_columns].values.reshape(-1,len(target_columns)))-1
+        targets = torch.FloatTensor(data[target_columns].values.reshape(-1,len(target_columns)))
         whole_dataset = torch.utils.data.TensorDataset(inputs, targets)
         train_dataset, validate_dataset = torch.utils.data.random_split(whole_dataset, (len(whole_dataset)-int(len(whole_dataset)*args.test_ratio),int(len(whole_dataset)*args.test_ratio)))
         train_loader = torch.utils.data.DataLoader( 
@@ -117,8 +116,8 @@ if __name__=="__main__":
                 pin_memory=True
                 )
         validate_loader = torch.utils.data.DataLoader( 
-                #dataset=validate_dataset, 
-                dataset=train_dataset, 
+                dataset=validate_dataset, 
+                #dataset=train_dataset, 
                 batch_size=args.batch_size,
                 shuffle=False,
                 drop_last=True,

@@ -41,6 +41,7 @@ _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说�
 CONFIDENCE_THRESHOLD = get_confidence()   
 BACK_CONFIDENCE_THRESHOLD = 0.9
 #定位模型
+#SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_pos/model_best_old12345.pt"   
 SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_adjust/model_best.pt"   
 #检测模型
 MMD_CONFIG = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py"
@@ -50,15 +51,15 @@ MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_7_head
 #MMD_WEIGHTS_NIGHT = "object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth"  #will depracate in next version
 #OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_full_data_465.pt"    #微调后
 
-BACK_HEAD_TOO_SMALL = 60
-HEAD_TOO_SMALL = 60
-TOP_TOO_SMALL = 59
-ANGLE_TOO_SMALL = 58
-WINDOW_WIDTH = 650
-WINDOW_HEIGHT = 200
+BACK_HEAD_TOO_SMALL = 50 #40
+HEAD_TOO_SMALL = 60  #45
+TOP_TOO_SMALL = 52
+ANGLE_TOO_SMALL = 53
+WINDOW_WIDTH = 650*0.85
+WINDOW_HEIGHT = 200*0.85
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-PARALLEL_MODE = True
+#PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:
@@ -68,8 +69,8 @@ else:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "./car_dir/"
-#CAR_TO_CAR_DIR = "/home/user/list/"
+CAR_TO_CAR_DIR = "/home/user/Data1/2019-12-14/"
+#CAR_TO_CAR_DIR = "./car_dir/"
 
 IGNORE_5 = True
 IGNORE_5 = False

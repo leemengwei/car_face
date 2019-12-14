@@ -9,6 +9,9 @@ import json
 from glob import glob
 import matplotlib.pyplot as plt
 
+with_name = False
+#with_name = True
+
 def xy_order_correction(inputs, small_cols, big_cols):
     for col1, col2 in zip(small_cols, big_cols):
         wrong_rows = inputs[col1]>inputs[col2]
@@ -243,7 +246,8 @@ def get_ref_and_heads(data_path, args):
             eight_image_json_list.append([first_right, back_right])
 
     ref_names = ['angle', 'top', 'angle_r', 'top_r']   #TODO：参考物的名称
-    head_names = ["head1", "head2", "head3", "head4", "head5" ]      #TODO: 类别必须形如 head1 head2 等，其中 1 2 表示固定的位置，不允许改变
+    #head_names = ["head1", "head2", "head3", "head4", "head5" ]      #TODO: 类别必须形如 head1 head2 等，其中 1 2 表示固定的位置，不允许改变
+    head_names = ["head1", "head2", "head3", "head4" ]      #Trying to ignore 5 here.
 
     #六张图、八张图将根据不同的策略尝试生成数据：
     print("Generating data for no folder image...")
@@ -296,9 +300,12 @@ def mannual_feature(inputs, paths, args):
         for kind in set(inputs['label']):
             plt.scatter(inputs[inputs['label']==kind]['x_ratio'], inputs[inputs['label']==kind]['y_ratio'], label = "Position:%s"%kind, alpha=0.6, s=7)
         plt.legend()
-        #plt.draw()
-        #plt.pause(1)
-        plt.show()
+    if with_name:
+        for idx,i in enumerate(paths):
+            plt.text(inputs['x_ratio'][idx], inputs['y_ratio'][idx], i.split('/')[-1].strip('.json'), size=6)
+    #plt.draw()
+    #plt.pause(1)
+    plt.show()
     one_hot = np.zeros((inputs.shape[0],5))
     one_hot_index = (np.arange(inputs.shape[0]), inputs['label'].values.astype(int))
     one_hot[(np.arange(inputs.shape[0]), inputs['label'].values.astype(int)-1)] = 1
