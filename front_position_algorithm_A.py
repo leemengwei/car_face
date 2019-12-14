@@ -49,7 +49,7 @@ class A(camera):
         self.time_num = time_num
         #Init model:
         #Sptial net 载入结构：
-        self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 20, hidden_depth=5, output_size=config.NUM_OF_SEATS_PEER_CAR)
+        self.net_spatial = spatial_model.NeuralNet(input_size=12, hidden_size= 100, hidden_depth=3, output_size=config.NUM_OF_SEATS_PEER_CAR)
         self.net_spatial_param = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
         self.net_spatial.load_state_dict(self.net_spatial_param['model_state_dict'])
         #Cascade net 载入结构:

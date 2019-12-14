@@ -68,7 +68,6 @@ def generate_for_six_image_folder(json_list, head_names, ref_names):
         counter = 0
         for i in data['shapes']:
             if i['label'] in head_names:
-                print(ref_and_head_position[counter][4*2:-1], np.array(i['points']).reshape(-1))
                 ref_and_head_position[counter][4*2:-1] = np.array(i['points']).reshape(-1)
                 ref_and_head_position[counter][-1] = int(i['label'][-1])
                 paths.append(files)
@@ -126,7 +125,6 @@ def generate_for_no_folder_images(json_list, head_names, ref_names):
         counter = 0
         for i in data['shapes']:
             if i['label'] in head_names:
-                print(ref_and_head_position[counter][4*2:-1], np.array(i['points']).reshape(-1))
                 ref_and_head_position[counter][4*2:-1] = np.array(i['points']).reshape(-1)
                 ref_and_head_position[counter][-1] = int(i['label'][-1])
                 paths.append(files)
@@ -296,13 +294,15 @@ def mannual_feature(inputs, paths, args):
     inputs['y_ratio'] = (inputs['heads_x']-inputs['ref1_x'])/(inputs['ref1_x']-inputs['ref2_x'])
     inputs['x_ratio'] = (inputs['heads_y']-inputs['ref1_y'])/(inputs['ref1_x']-inputs['ref2_x'])
     #inputs = (inputs-inputs.mean())/inputs.std()
+    colors = plt.cm.Paired(np.linspace(1,0,2+len(set(inputs['label']))))
     if args.visualization:
-        for kind in set(inputs['label']):
-            plt.scatter(inputs[inputs['label']==kind]['x_ratio'], inputs[inputs['label']==kind]['y_ratio'], label = "Position:%s"%kind, alpha=0.6, s=7)
+        for line_idx in range(len(inputs)):
+            this_line = inputs.iloc[line_idx]
+            if int(this_line['label']) in [1,2,3,4]:
+                plt.scatter(this_line['x_ratio'], this_line['y_ratio'], color=colors[int(this_line['label'])], s=7)
+                if with_name:
+                    plt.text(this_line['x_ratio'], this_line['y_ratio'], paths[line_idx].split('/')[-1].strip('.json'), size=6)
         plt.legend()
-    if with_name:
-        for idx,i in enumerate(paths):
-            plt.text(inputs['x_ratio'][idx], inputs['y_ratio'][idx], i.split('/')[-1].strip('.json'), size=6)
     #plt.draw()
     #plt.pause(1)
     plt.show()
