@@ -22,7 +22,7 @@ def night_cast():
 
 def get_confidence(): 
     #CONFIDENCE_THRESHOLD = 0.63   #retrain with conf 0.53 to get 2.87 with old data.
-    CONFIDENCE_THRESHOLD = 0.49
+    CONFIDENCE_THRESHOLD = 0.5
     if night_cast():
         #CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半  #will depracate in next version
         pass
@@ -39,7 +39,7 @@ UNVEIL               = True
 
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
 CONFIDENCE_THRESHOLD = get_confidence()   
-BACK_CONFIDENCE_THRESHOLD = 0.9
+BACK_CONFIDENCE_THRESHOLD = 0.6
 #定位模型
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_pos/model_best_old12345.pt"   
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_adjust/model_best.pt"   
@@ -60,7 +60,7 @@ WINDOW_WIDTH = 650*0.85
 WINDOW_HEIGHT = 200*0.85
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-#PARALLEL_MODE = True
+PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:
@@ -70,7 +70,7 @@ else:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/home/user/Data1/2019-12-15/"
+CAR_TO_CAR_DIR = "/home/user/experiments/"
 #CAR_TO_CAR_DIR = "./car_dir/"
 
 IGNORE_5 = True

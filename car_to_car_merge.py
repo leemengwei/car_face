@@ -23,7 +23,7 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
     number_score_by_vote = 0
     number_score_by_union = 0
     all_num = 0
-    for idx, car in enumerate(cars[85:]):
+    for idx, car in enumerate(cars[:]):
         print("\nNEW PIC" ,idx, "of", len(cars), car)
         images_both_side = glob.glob(car+"/*.png")
         images_both_side.sort()
@@ -108,7 +108,7 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
             if len(set(car_result_vote)) == len(car_result_label):
                 number_score_by_vote += 1
             print("PbyU:", position_score_by_union, "PbyV:", position_score_by_vote, "NbyU:", number_score_by_union, "NbyV:", number_score_by_vote, "All:", all_num)
-        input()
+        #input()
         plt.close()
         plt.close()
         plt.close()

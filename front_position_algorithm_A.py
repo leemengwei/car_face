@@ -69,21 +69,22 @@ class A(camera):
         cfg.data.test.test_mode = True
         model = init_detector(_mmd_config, _mmd_weights)
         return model
-    def drop_small_heads(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s):
+    def drop_small_heads(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores):
         head_heights = heads_y2s-heads_y1s 
         head_widths = heads_x2s-heads_x1s
         if 'back' in self.side:
-            where_too_small = (head_heights<config.BACK_HEAD_TOO_SMALL)|(head_widths<config.BACK_HEAD_TOO_SMALL)
+            where_too_small = (head_heights<config.BACK_HEAD_TOO_SMALL)|(head_widths<config.BACK_HEAD_TOO_SMALL)   #for back, neither side too small is wrong
         else:
-            where_too_small = (head_heights<config.HEAD_TOO_SMALL)&(head_widths<config.HEAD_TOO_SMALL)
+            where_too_small = (head_heights<config.HEAD_TOO_SMALL)&(head_widths<config.HEAD_TOO_SMALL)    #for front, we can accept one side small scenario
         #Drop if too small:
         heads_x1s = heads_x1s[~where_too_small]
         heads_x2s = heads_x2s[~where_too_small]
         heads_y1s = heads_y1s[~where_too_small]
         heads_y2s = heads_y2s[~where_too_small]
+        heads_scores = heads_scores[~where_too_small]
         if len(np.where(where_too_small==True)[0])>=1:
             print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
-        return heads_x1s, heads_y1s, heads_x2s, heads_y2s
+        return heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores
     def get_objs_position(self, net_cam_frame, CONFIDENCE_THRESHOLD):
         classes = config.CLASSES_4
         with no_grad():
@@ -278,9 +279,9 @@ class A(camera):
         return angle_x1, angle_y1, angle_x2, angle_y2, \
                top_x1, top_y1, top_x2, top_y2, \
                angle_score, top_score, angle_name, top_name, frame_status
-    def check_heads_outputs(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2):
+    def check_heads_outputs(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores):
         #Judge if head big enough
-        heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s)
+        heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores)
         #Drop if outside:
         angle_xc = ((angle_x1+angle_x2)/2).reshape(-1)
         angle_yc = ((angle_y1+angle_y2)/2).reshape(-1)
@@ -291,12 +292,12 @@ class A(camera):
         if self.side is "left":
             left_right_within = heads_x_center>angle_xc
         elif self.side is "right":
-            left_right_within = heads_x_center>top_xc
+            left_right_within = heads_x_center<angle_xc
         else:   #side is back
             print("This check function should not be called in backside")
             sys.exit()
-        up_down_within = ~np.add(~(heads_y_center<angle_yc), ~(heads_y_center>top_yc))
-        where_within = ~np.add(~up_down_within, ~left_right_within)
+        up_down_within = (heads_y_center<angle_yc)&(heads_y_center>top_yc)  #image pixel y is opposite
+        where_within = up_down_within&left_right_within
         heads_keep_idx = np.where(where_within==True)[0]
         if len(heads_keep_idx)-len(heads_x_center)!=0:
             print("There are %s outside head dropped..."%(len(heads_x_center)-len(heads_keep_idx)))
@@ -304,7 +305,8 @@ class A(camera):
         heads_y1s = heads_y1s[heads_keep_idx]
         heads_x2s = heads_x2s[heads_keep_idx]
         heads_y2s = heads_y2s[heads_keep_idx]
-        return heads_x1s, heads_y1s, heads_x2s, heads_y2s
+        heads_scores = heads_scores[heads_keep_idx]
+        return heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores
     def get_spatial_in_seat_position(self, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s):
         if len(heads_x1s)==0:   #如果：没人头
             status = "No head, but must have car,"
@@ -413,7 +415,7 @@ class A(camera):
         if self.side == "left" or self.side =="right":
             if frame_status == "ok":    #识别或补充到两个标识物才是ok
                 #对人头的经验审查与修补：
-                heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2) 
+                heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores) 
                 #位置判别：
                 positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
                 #暂时忽略5位置
@@ -428,7 +430,7 @@ class A(camera):
                 positions_peer_side = [0,]
         #是后侧
         else:
-            heads_x1s, heads_y1s, heads_x2s, heads_y2s = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s)
+            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores)
             #if frame_status == "ok":  #定位后侧，必须要求从文件读到了两个参考点
             #    positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
             #else:
