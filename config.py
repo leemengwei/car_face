@@ -70,8 +70,8 @@ else:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/home/user/Data1/2019-12-14/"
-#CAR_TO_CAR_DIR = "./car_dir/"
+#CAR_TO_CAR_DIR = "/home/user/Data1/2019-12-14/"
+CAR_TO_CAR_DIR = "./units_experiments/"
 
 IGNORE_5 = True
 IGNORE_5 = False
