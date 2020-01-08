@@ -63,10 +63,16 @@ def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union
         #Add up back 3 or 4
         back = set(pos7 + pos8) - {1} - {2}
         predictions_merged = front.union(back)
+        predictions_merged = predictions_merged - {0}
         if (len(predictions_merged)-len(front))>=2:
             print("Warning, back adding:", back)
+        #Pos 2 bug save:
+        if len(predictions_merged)==5:   #If have 5 person already,
+            if 2 not in set(pos1+pos2+pos3):    #and in left side we dont see pos2
+                predictions_merged = predictions_merged-{2}
+                print("Pos2drop by bug fix")
     else:
-        print("Wrong method given. [union, vote]")
+        print("Wrong method given. [union, vote, front_and_back]")
         sys.exit()
     if (0 in predictions_merged):
         predictions_merged.remove(0)
