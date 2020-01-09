@@ -24,13 +24,12 @@ def get_confidence():
     #CONFIDENCE_THRESHOLD = 0.63   #retrain with conf 0.53 to get 2.87 with old data.
     CONFIDENCE_THRESHOLD = 0.5
     if night_cast():
-        #CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半  #will depracate in next version
+        #CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半  #will depracate in future
         pass
     return CONFIDENCE_THRESHOLD
 
 #Just a workaround:
 ################Options for object detection:
-#CLASSES_6 = ['angle', 'angle_r', 'top', 'top_r', 'head']  #+1背景类别 will depracate in next version
 CLASSES_4 = ['angle', 'top', 'head']    #加入晚上数据的模型已经不区分左右了
 
 ################Options for A and B:
@@ -47,10 +46,6 @@ SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_but_for_1234/mode
 #检测模型
 MMD_CONFIG = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py"
 MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_7_head944_conf049.pth"
-#白天+晚上的模型（不区分左右） will depracate in next version
-#MMD_CONFIG_NIGHT = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py" #will depracate in next version
-#MMD_WEIGHTS_NIGHT = "object_detection_logs_data_both_side_finetunes/hrnet_night_and_day.pth"  #will depracate in next version
-#OBJECT_DETECTION_MODEL = "object_detection_logs_data_both_side_finetunes/csv_retinanet_full_data_465.pt"    #微调后
 
 BACK_HEAD_TOO_SMALL = 50 #40
 HEAD_TOO_SMALL = 60  #45
@@ -60,7 +55,7 @@ WINDOW_WIDTH = 650*0.85
 WINDOW_HEIGHT = 200*0.85
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-PARALLEL_MODE = True
+#PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:
@@ -70,8 +65,8 @@ else:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/home/user/experiments/"
-#CAR_TO_CAR_DIR = "./car_dir/"
+#CAR_TO_CAR_DIR = "/home/user/experiments/"
+CAR_TO_CAR_DIR = "./units_experiments/"
 
 IGNORE_5 = True
 IGNORE_5 = False

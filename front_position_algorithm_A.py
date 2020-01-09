@@ -54,7 +54,6 @@ class A(camera):
         self.net_spatial.load_state_dict(self.net_spatial_param['model_state_dict'])
         #Cascade net 载入结构:
         self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_CONFIG, MMD_WEIGHTS)
-        #self.net_to_detect_objs_night = self.get_mmd_model_and_template(MMD_CONFIG_NIGHT, MMD_WEIGHTS_NIGHT)   #will depracate in next version
         #On gpu:
         self.net_spatial.cuda().eval()
         self.net_to_detect_objs.cuda().eval()
@@ -125,6 +124,7 @@ class A(camera):
                heads_scores, heads_names
 
     def get_refs_for_back(self):
+        #will obselete in next version
         try:
             angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 =list(np.loadtxt("./history_refs_%s"%self.side.strip("back")))
             angle_x1 = np.array([angle_x1])
@@ -209,6 +209,7 @@ class A(camera):
             top_x2 = np.array(tops_x2s).reshape(-1,1)
             top_y2 = np.array(tops_y2s).reshape(-1,1)
             top_score = np.array(tops_scores).reshape(-1,1)
+        #====================SIDE JUDGE===================:
         #强制就绪两个标识物,(强制就绪意在解决明明有但没检测到的情况，包括车超出画面的情况,也会被强制就绪)
         if self.side is "left":
             if (len(angle_score)==1 and len(top_score)==0):
@@ -268,6 +269,7 @@ class A(camera):
                 else:
                     pass
         else:  #self.side is "backleft or backright"
+           #will obselete in next version
            #本帧图像给出的top和angle都可直接舍弃（就不该有）
            #读取文件内容得到磁盘记录的标识物位置，并注意，在后续定位时给出足以区分前后相机不同定位空间的值（如取负操作等）：
            angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 = self.get_refs_for_back()
@@ -407,10 +409,11 @@ class A(camera):
         refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLD)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
-        if self.time_num == 1 and 'back' not in self.side:
-            refs_info = np.array([list(angle_x1), list(angle_y1), list(angle_x2), list(angle_y2), list(top_x1), list(top_y1), list(top_x2), list(top_y2)])
-            np.savetxt("./history_refs_%s"%self.side, refs_info.reshape(-1))   #首帧refs将会在每次threads调用时清除
+        if self.time_num == 1 and 'back' not in self.side:    #Will obselete in next version:
+            #refs_info = np.array([list(angle_x1), list(angle_y1), list(angle_x2), list(angle_y2), list(top_x1), list(top_y1), list(top_x2), list(top_y2)])
+            #np.savetxt("./history_refs_%s"%self.side, refs_info.reshape(-1))   #首帧refs将会在每次threads调用时清除
             #print("history refs saved")
+            pass
         #前侧则：
         if self.side == "left" or self.side =="right":
             if frame_status == "ok":    #识别或补充到两个标识物才是ok
@@ -435,7 +438,7 @@ class A(camera):
             #    positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
             #else:
             #后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
-            status = "Direct guess (%s)"%self.side
+            status = "Direct Guess (%s)"%self.side
             if self.side == "backleft":
                 positions_peer_side = [4,4,4,4,4][:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
             else:   # self.side == "backright"
@@ -450,7 +453,7 @@ class A(camera):
             plt.clf()
             ax1 = plt.subplot(211)
             ax1.imshow(image_data)
-            ax1.set_title("View of Camera %s, always keep running"%self.side)
+            ax1.set_title("View of Camera %s%s, always keep running"%(self.side, self.time_num))
             ax1.axis('off')
             #plot1中画标识物：
             if UNVEIL:

@@ -69,7 +69,9 @@ class workers_cluster():
         self.worker5 = Worker("right", 2)
         self.worker6 = Worker("right", 3)
         self.worker7 = Worker("backleft", 1)
-        self.worker8 = Worker("backright", 1)
+        self.worker8 = Worker("backleft", 2)
+        self.worker9 = Worker("backright", 1)
+        self.worker10 = Worker("backright", 2)
         sys.stdout.flush()
         self.workers_list = [ \
                 self.worker1, \
@@ -80,17 +82,18 @@ class workers_cluster():
                 self.worker6, \
                 self.worker7, \
                 self.worker8, \
+                self.worker9, \
+                self.worker10, \
                 ]
 
 def algorithm_detection_and_merge(workers, \
-                     image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8):
+                     image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8, image_data9, image_data10):
     #INTERFACE WITH C
-    #embed()
+    #Will deprecate in next version
     if os.path.exists("./history_refs_right"):
         os.remove('./history_refs_right')
     if os.path.exists("./history_refs_left"):
         os.remove('./history_refs_left')
-    #image_data1 = image_data2 = image_data3 = image_data4 = image_data5 = image_data6 = camera.get_image_data("/home/user/Data1/2019-05-12 16-53-48/2019-05-12 16-53-49-520.png")
     workers_list = workers.workers_list
     sys.stdout.flush()
     CONFIDENCE_THRESHOLD = config.get_confidence()
@@ -98,7 +101,7 @@ def algorithm_detection_and_merge(workers, \
         print("Running on parallel mode...")
         start_time = time.time()
         pos = []
-        #GPU 够，2+4+2个并行, 1/4 2/5 3/6 7/8
+        #GPU 够，10个一起并行吧, 顺序间workers实例化
         #Lefts:
         _thread1 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD)
         _thread1.set_values(image_data1)
@@ -122,24 +125,32 @@ def algorithm_detection_and_merge(workers, \
         #Backs:
         _thread7 = thread_manager(workers_list[6], config.BACK_CONFIDENCE_THRESHOLD)
         _thread7.set_values(image_data7)
+        _thread7.start()
         _thread8 = thread_manager(workers_list[7], config.BACK_CONFIDENCE_THRESHOLD)
         _thread8.set_values(image_data8)
+        _thread8.start()
+        _thread9 = thread_manager(workers_list[8], config.BACK_CONFIDENCE_THRESHOLD)
+        _thread9.set_values(image_data9)
+        _thread9.start()
+        _thread10 = thread_manager(workers_list[9], config.BACK_CONFIDENCE_THRESHOLD)
+        _thread10.set_values(image_data10)
+        _thread10.start()
+
+        #print("Fronts finished, now back...")
+        #sys.exit()
+        #后侧进程需要用首帧的结果, 所以一定要确定前6帧完成
+        #不用了， will obselete in next version...
 
         _thread1.join()
         _thread2.join()
-        
-        #print("Fronts finished, now back...")
-        #sys.exit()
-         #后侧进程需要用首帧的结果, 所以一定要确定前6帧完成
-        _thread7.start()
-        _thread8.start()
-
         _thread3.join()
         _thread4.join()
         _thread5.join()
         _thread6.join()
         _thread7.join()
         _thread8.join()
+        _thread9.join()
+        _thread10.join()
         
         pos1 = _thread1.positions
         pos2 = _thread2.positions
@@ -149,11 +160,12 @@ def algorithm_detection_and_merge(workers, \
         pos6 = _thread6.positions
         pos7 = _thread7.positions
         pos8 = _thread8.positions
+        pos9 = _thread9.positions
+        pos10 = _thread10.positions
         #融合:
-        #pos = pos1 + pos2 + pos3 + pos4 + pos5 + pos6 + pos7 + pos8  #move to seat merge, will depracate in next version
-        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union") 
-        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="vote") 
-        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="front_and_back")
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method="union") 
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method="vote") 
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method="front_and_back")
     else:
         print("Running in serial mode with bug...")
         start_time = time.time()
@@ -161,14 +173,18 @@ def algorithm_detection_and_merge(workers, \
         for worker in workers_list:
             pos1 = worker.do(image_data1, CONFIDENCE_THRESHOLD)
             i += 0.5
-        pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = pos1
-        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="union") 
-        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="vote") 
-        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method="front_and_back")
-    #目前分别返回：后侧加在最后，并以“人数个数”显示（而不是位置）
+        pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = pos9 = pos10 = pos1
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method="union") 
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method="vote") 
+        predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method="front_and_back")
+    #目前分别返回，后侧加在最后，并以“人数个数”显示（而不是位置）
     num7 = len(np.where(np.array(pos7)!=0)[0])
     num8 = len(np.where(np.array(pos8)!=0)[0])
-    predictions_merged = predictions_merged + [num7] + [num8]
+    num_backleft = max(num7, num8)
+    num9 = len(np.where(np.array(pos9)!=0)[0])
+    num10 = len(np.where(np.array(pos10)!=0)[0])
+    num_backright = max(num7, num8)
+    predictions_merged = predictions_merged + [num_backleft] + [num_backright]
     print("predictions_merged", predictions_merged)
 
 

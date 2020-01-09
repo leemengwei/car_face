@@ -27,19 +27,14 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         print("\nNEW PIC" ,idx, "of", len(cars), car)
         images_both_side = glob.glob(car+"/*.png")
         images_both_side.sort()
-        try:
-            images_left = images_both_side[:3]
-            images_right = images_both_side[3:6]
-            images_back = images_both_side[6:]
-            if len(images_back)==4:
-                images_back = images_back[::2]
-        except:
-            print("Not enough image in %s"%car)
+        images_left = images_both_side[:3]
+        images_right = images_both_side[3:6]
+        images_back = images_both_side[6:]
         print("Lefts:%s\n Rights:%s\n Back:%s\n"%(images_left, images_right, images_back))
         pos1 = pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = []
         try:
             assert len(images_left)==len(images_right), "left have %s, right have %s"%(len(images_left), len(images_right))
-            assert len(images_back)==2, "back have %s"%len(images_back)
+            assert len(images_back)==4, "back have %s"%len(images_back)
         except Exception as e:
             print(e)
             continue
@@ -70,7 +65,7 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
             plt.figure()
         A_image_data = camera.get_image_data(images_right[2])
         pos6, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
-        #BACKS:
+        #BACKSleft:
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[0])
@@ -78,17 +73,26 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[1])
-        pos8, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
+        pos8, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
+        #BACKSright:
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_back[2])
+        pos9, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
+        if config.VISUALIZATION:
+            plt.figure()
+        A_image_data = camera.get_image_data(images_back[3])
+        pos10, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
 
-        car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "union")
-        car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "vote")
-        car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, method = "front_and_back")
+        car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method = "union")
+        car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method = "vote")
+        car_result_front_and_back = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method = "front_and_back")
         #Offline yield txt result file.
         with open(car+"/python_txt.txt", 'w') as f:
             f.write("front:%s\n"% car_result_vote)
             f.write("front and back:%s\n"%car_result_front_and_back)
-            f.write("backleft:%s\n"%pos7)
-            f.write("backright:%s\n"%pos8)
+            f.write("backleft:%s\n"%(pos7+pos8))
+            f.write("backright:%s\n"%(pos9+pos10))
 
 
         car_result_label = list(set(np.array(os.popen("cat %s/*.json|grep head|grep label|cut -c 21|sort|uniq"%car.replace(' ','\ ')).read().split()).astype(int)))
