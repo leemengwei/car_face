@@ -14,23 +14,23 @@ class Worker():
     def __init__(self, side, time_num=None):
         self.root_dir = os.getcwd()
         self.program = A.A(self.root_dir, side, time_num)    #With side annoted here.
-    def do(self, image_data, CONFIDENCE_THRESHOLD):
-        positions, plt = self.program.self_logic(image_data, CONFIDENCE_THRESHOLD)
+    def do(self, image_data, CONFIDENCE_THRESHOLDS):
+        positions, plt = self.program.self_logic(image_data, CONFIDENCE_THRESHOLDS)
         return positions
 
 class thread_manager(threading.Thread):
-    def __init__(self, worker, CONFIDENCE_THRESHOLD):
+    def __init__(self, worker, CONFIDENCE_THRESHOLDS):
         threading.Thread.__init__(self)
         self.worker = worker
         self.image_data = None
         self.positions = None
-        self.CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD
+        self.CONFIDENCE_THRESHOLDS = CONFIDENCE_THRESHOLDS
     def set_values(self, image_data):
         self.image_data = image_data
     def run(self):
         if self.image_data is None:
             raise NotImplementedError
-        self.positions = self.worker.do(self.image_data, self.CONFIDENCE_THRESHOLD)
+        self.positions = self.worker.do(self.image_data, self.CONFIDENCE_THRESHOLDS)
 
 def python_get_images(image_idx, filelist):
     image_name1 = filelist[image_idx]
@@ -57,7 +57,13 @@ def python_get_images(image_idx, filelist):
     image_name8 = filelist[image_idx]
     image_data8 = camera.get_image_data(image_name8)
     image_idx += 1
-    return image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8, image_idx
+    image_name9 = filelist[image_idx]
+    image_data9 = camera.get_image_data(image_name9)
+    image_idx += 1
+    image_name10 = filelist[image_idx]
+    image_data10 = camera.get_image_data(image_name10)
+    image_idx += 1
+    return image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8, image_data9, image_data10, image_idx
 
 class workers_cluster():
     # 初始化新线程，加载模型X3
@@ -96,43 +102,42 @@ def algorithm_detection_and_merge(workers, \
         os.remove('./history_refs_left')
     workers_list = workers.workers_list
     sys.stdout.flush()
-    CONFIDENCE_THRESHOLD = config.get_confidence()
     if config.PARALLEL_MODE:
         print("Running on parallel mode...")
         start_time = time.time()
         pos = []
         #GPU 够，10个一起并行吧, 顺序间workers实例化
         #Lefts:
-        _thread1 = thread_manager(workers_list[0], CONFIDENCE_THRESHOLD)
+        _thread1 = thread_manager(workers_list[0], config.FRONT_CONFIDENCE_THRESHOLDS)
         _thread1.set_values(image_data1)
         _thread1.start()
-        _thread2 = thread_manager(workers_list[1], CONFIDENCE_THRESHOLD)
+        _thread2 = thread_manager(workers_list[1], config.FRONT_CONFIDENCE_THRESHOLDS)
         _thread2.set_values(image_data2)
         _thread2.start()
-        _thread3 = thread_manager(workers_list[2], CONFIDENCE_THRESHOLD)
+        _thread3 = thread_manager(workers_list[2], config.FRONT_CONFIDENCE_THRESHOLDS)
         _thread3.set_values(image_data3)
         _thread3.start()
         #Rights:
-        _thread4 = thread_manager(workers_list[3], CONFIDENCE_THRESHOLD)
+        _thread4 = thread_manager(workers_list[3], config.FRONT_CONFIDENCE_THRESHOLDS)
         _thread4.set_values(image_data4)
         _thread4.start()
-        _thread5 = thread_manager(workers_list[4], CONFIDENCE_THRESHOLD)
+        _thread5 = thread_manager(workers_list[4], config.FRONT_CONFIDENCE_THRESHOLDS)
         _thread5.set_values(image_data5)
         _thread5.start()
-        _thread6 = thread_manager(workers_list[5], CONFIDENCE_THRESHOLD)
+        _thread6 = thread_manager(workers_list[5], config.FRONT_CONFIDENCE_THRESHOLDS)
         _thread6.set_values(image_data6)
         _thread6.start()
         #Backs:
-        _thread7 = thread_manager(workers_list[6], config.BACK_CONFIDENCE_THRESHOLD)
+        _thread7 = thread_manager(workers_list[6], config.BACK_CONFIDENCE_THRESHOLDS)
         _thread7.set_values(image_data7)
         _thread7.start()
-        _thread8 = thread_manager(workers_list[7], config.BACK_CONFIDENCE_THRESHOLD)
+        _thread8 = thread_manager(workers_list[7], config.BACK_CONFIDENCE_THRESHOLDS)
         _thread8.set_values(image_data8)
         _thread8.start()
-        _thread9 = thread_manager(workers_list[8], config.BACK_CONFIDENCE_THRESHOLD)
+        _thread9 = thread_manager(workers_list[8], config.BACK_CONFIDENCE_THRESHOLDS)
         _thread9.set_values(image_data9)
         _thread9.start()
-        _thread10 = thread_manager(workers_list[9], config.BACK_CONFIDENCE_THRESHOLD)
+        _thread10 = thread_manager(workers_list[9], config.BACK_CONFIDENCE_THRESHOLDS)
         _thread10.set_values(image_data10)
         _thread10.start()
 
@@ -171,7 +176,7 @@ def algorithm_detection_and_merge(workers, \
         start_time = time.time()
         i = 1
         for worker in workers_list:
-            pos1 = worker.do(image_data1, CONFIDENCE_THRESHOLD)
+            pos1 = worker.do(image_data1, config.FRONT_CONFIDENCE_THRESHOLDS)
             i += 0.5
         pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = pos9 = pos10 = pos1
         predictions_merged = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method="union") 
@@ -201,10 +206,10 @@ if __name__ == "__main__":
     while True:
         try:
             #数据：
-            image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8, image_idx = python_get_images(image_idx, filelist)
+            image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8, image_data9, image_data10, image_idx = python_get_images(image_idx, filelist)
         except IndexError:
             print ("图片完， 退出主线程")
             break
-        final_result = algorithm_detection_and_merge(workers, image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8) 
+        final_result = algorithm_detection_and_merge(workers, image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8, image_data9, image_data10) 
             #input()   
 

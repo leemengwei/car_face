@@ -10,3 +10,8 @@
 
 2020.2.7
 mannual trian & val now all as Train, shanghai 20191130 as Val
+
+2020.2.12
+mannual trian & val now all as Train, shanghai 20191130 as Val
+shanghai as val is now very strict, CAN NEVER USED AS TRAIN!!!
+

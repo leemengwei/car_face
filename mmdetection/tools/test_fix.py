@@ -224,12 +224,15 @@ def my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold):
     #print("Precising:", precisions, "\nRecalling:", average_precisions, "\nF1_at_this_conf:", f1_scores, np.array(list(f1_scores.values())).sum())
     return np.array(list(f1_scores.values())), np.array(list(precisions.values())), np.array(list(recalls.values()))
 
-def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
-    #print("Using confidence score:", CONFIDENCE_THRESHOLD)
+def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLDS, show=False):
+    #print("Using confidence scores:", CONFIDENCE_THRESHOLDS)
     model.eval()
     start = time.time()
     result = inference_detector(model, _data)
     elapsed_time = time.time()-start
+    #Seperate CONFIDENCE_THRESHOLDS control:
+    for i in range(len(result)):
+        result[i] = result[i][result[i][:,-1]>CONFIDENCE_THRESHOLDS[i]]
     labels = np.concatenate([
                            np.full(bbox.shape[0], i, dtype=np.int32)
                           for i, bbox in enumerate(result)])
@@ -243,8 +246,6 @@ def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
     label_names = []
     for label,bbox in zip(labels,bboxes):
         threshold = bbox[-1]
-        if threshold < CONFIDENCE_THRESHOLD:
-            continue
         x1,y1 = bbox[0],bbox[1]
         x2,y2 = bbox[2],bbox[1]
         x3,y3 = bbox[2],bbox[3]

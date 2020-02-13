@@ -20,13 +20,13 @@ def night_cast():
         NIGHT_CAST = False
     return NIGHT_CAST
 
-def get_confidence(): 
+def get_confidences(): 
     #CONFIDENCE_THRESHOLD = 0.63   #retrain with conf 0.53 to get 2.87 with old data.
-    CONFIDENCE_THRESHOLD = 0.5
+    CONFIDENCE_THRESHOLDS = [0.5, 0.5, 0.5]
     if night_cast():
         #CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD/2   #晚上的置信度是白天的一半  #will depracate in future
         pass
-    return CONFIDENCE_THRESHOLD
+    return CONFIDENCE_THRESHOLDS
 
 #Just a workaround:
 ################Options for object detection:
@@ -37,8 +37,9 @@ UNVEIL               = False
 UNVEIL               = True
 
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
-CONFIDENCE_THRESHOLD = get_confidence()   
-BACK_CONFIDENCE_THRESHOLD = 0.6
+#CLASSES: angle top head
+FRONT_CONFIDENCE_THRESHOLDS = [0.5, 0.5, 0.5]
+BACK_CONFIDENCE_THRESHOLDS = [0.6, 0.6, 0.6]
 #定位模型
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_pos/model_best_old12345.pt"   
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_adjust/model_best.pt"   
@@ -55,7 +56,7 @@ WINDOW_WIDTH = 650*0.85
 WINDOW_HEIGHT = 200*0.85
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-#PARALLEL_MODE = True
+PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:

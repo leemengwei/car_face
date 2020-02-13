@@ -43,46 +43,46 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_left[0])
-        pos1, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos1, A_plt = A_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_left[1])
-        pos2, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos2, A_plt = A_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_left[2])
-        pos3, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos3, A_plt = A_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
         #RIGHTS:
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_right[0])
-        pos4, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos4, A_plt = B_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_right[1])
-        pos5, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos5, A_plt = B_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_right[2])
-        pos6, A_plt = B_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
+        pos6, A_plt = B_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
         #BACKSleft:
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[0])
-        pos7, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
+        pos7, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[1])
-        pos8, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
+        pos8, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
         #BACKSright:
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[2])
-        pos9, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
+        pos9, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
         if config.VISUALIZATION:
             plt.figure()
         A_image_data = camera.get_image_data(images_back[3])
-        pos10, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLD)
+        pos10, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
 
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method = "vote")
@@ -135,8 +135,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "Double side...")
     args = parser.parse_args()
      
-    CONFIDENCE_THRESHOLD = config.get_confidence()
-    print("Using confidence:%s"%CONFIDENCE_THRESHOLD)
+    print("Using front confidence:%s"%config.FRONT_CONFIDENCE_THRESHOLDS)
+    print("Using back confidence:%s"%config.BACK_CONFIDENCE_THRESHOLDS)
     #Initialization:
     #A:
     print("Initializing front camera A...")

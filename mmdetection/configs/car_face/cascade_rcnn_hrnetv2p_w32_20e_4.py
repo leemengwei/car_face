@@ -200,7 +200,7 @@ test_cfg = dict(
     keep_all_stages=False)
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/mfs/home/limengwei/car_face/car_face/'
+data_root = '/mfs/home/limengwei/car_face/car_face/config_json/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53],
     std=[58.395, 57.12, 57.375],

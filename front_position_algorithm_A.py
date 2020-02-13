@@ -84,10 +84,10 @@ class A(camera):
         if len(np.where(where_too_small==True)[0])>=1:
             print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
         return heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores
-    def get_objs_position(self, net_cam_frame, CONFIDENCE_THRESHOLD):
+    def get_objs_position(self, net_cam_frame, CONFIDENCE_THRESHOLDS):
         classes = config.CLASSES_4
         with no_grad():
-            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLD, show=False)
+            objs_x1s, objs_y1s, objs_x2s, objs_y2s, objs_scores, objs_indexes, objs_elapsed_time = test_fix.single_gpu_frame_detection(self.net_to_detect_objs, net_cam_frame, CONFIDENCE_THRESHOLDS, show=False)
             print("Detection(%s-%s):"%(self.side, self.time_num), objs_indexes, objs_scores)
             objs_names = np.array([classes[i] for i in objs_indexes])
             if len(objs_names)>0:
@@ -394,7 +394,7 @@ class A(camera):
         except:
             pass
         return positions_peer_side
-    def self_logic(self, image_data, CONFIDENCE_THRESHOLD):
+    def self_logic(self, image_data, CONFIDENCE_THRESHOLDS):
         if image_data.dtype == np.uint8:   #If come from C
             #print("Must be C running...")
             image_data = image_data.astype(float)/255
@@ -406,7 +406,7 @@ class A(camera):
         #print(image_data.min(), image_data.mean(), image_data.max())
         start_time = time.time()
         #检测标识物和人头:
-        refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLD)
+        refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLDS)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
         if self.time_num == 1 and 'back' not in self.side:    #Will obselete in next version:
@@ -504,20 +504,20 @@ class A(camera):
             #plt.close()
         return [positions_peer_side, plt]
 
-if __name__ == "__main__":
-    #parser = argparse.ArgumentParser(description = "Front A Net...")
-    #parser.add_argument('-V', '--visualization', action="store_true", default=False)
-    #args = parser.parse_args()
-    #embed()
-    #Initializing:
-    print("Initializing front camera A...")
-    root_dir = "/".join(os.getcwd().split('/')[:-1])
-    A_program = A(root_dir, "left")
-    print("Real_time running...")
-    filelist = glob.glob("../left/*.jpg")   
-    for idx, filename in enumerate(filelist[:]):
-        image_data = camera.get_image_data(filename)
-        CONFIDENCE_THRESHOLD = config.get_confidence()
-        A_program.self_logic(image_data, CONFIDENCE_THRESHOLD)
-
-
+#if __name__ == "__main__":
+#    #parser = argparse.ArgumentParser(description = "Front A Net...")
+#    #parser.add_argument('-V', '--visualization', action="store_true", default=False)
+#    #args = parser.parse_args()
+#    #embed()
+#    #Initializing:
+#    print("Initializing front camera A...")
+#    root_dir = "/".join(os.getcwd().split('/')[:-1])
+#    A_program = A(root_dir, "left")
+#    print("Real_time running...")
+#    filelist = glob.glob("../left/*.jpg")   
+#    for idx, filename in enumerate(filelist[:]):
+#        image_data = camera.get_image_data(filename)
+#        CONFIDENCE_THRESHOLDS = config.get_confidence()
+#        A_program.self_logic(image_data, CONFIDENCE_THRESHOLDS)
+#
+#

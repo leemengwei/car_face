@@ -14,7 +14,6 @@ import copy
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-CONFIDENCE_THRESHOLD = config.get_confidence()
 
 #注意，这里的所有融合函数唯一可能要考虑的问题是对0的剔除，至于诸如“有车就一定有人”的策略已经在单帧就实现完毕了。
 def seat_merge(A_prediction, B_prediction):
