@@ -12,6 +12,11 @@
 mannual trian & val now all as Train, shanghai 20191130 as Val
 
 2020.2.12
-mannual trian & val now all as Train, shanghai 20191130 as Val
 shanghai as val is now very strict, CAN NEVER USED AS TRAIN!!!
+
+2020.03.21
+负样本压制备忘说明：１）现在都走ｘｍｌ，２）ｘｍｌ会生成ｊｓｏｎ，ｍｍｄ读ｊｓｏｎ，３）所以没有打标签的图片没有ｘｍｌ，不会体现在ｊｓｏｎ中，所以不用担心~
+(all to xml~)
+shanghai cleaned, and as val
+mannual_val is empty, all as mannual train, and cleaned.
 

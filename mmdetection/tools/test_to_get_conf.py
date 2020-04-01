@@ -10,12 +10,11 @@ import numpy as np
 import mmcv
 import torch
 import torch.distributed as dist
-from mmcv.runner import load_checkpoint, get_dist_info
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
-from mmdet.apis import init_dist
-from mmdet.core import results2json, coco_eval
-from mmdet.datasets import build_dataloader, get_dataset
+from mmdet.core import coco_eval, results2json, wrap_fp16_model
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.apis import inference_detector, show_result,init_detector
 
@@ -26,6 +25,7 @@ import sklearn.metrics
 sys.path.append("/home/user/PersonDetection99/car_face/")
 
 head_col = 2
+
 def coco_eval_substitude(outputs, dataset, show=False):
     #f1s = np.empty(shape=(0,len(dataset.cat_ids)))
     f1s = np.array(np.tile(0,len(dataset.cat_ids)))
@@ -176,7 +176,6 @@ def my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold):
                     false_positives = np.append(false_positives, 1)
                     true_positives  = np.append(true_positives, 0)
             #SAVE FP Figures! lmw
-            if len(detections)==0:continue
             if false_positives[-1]>0 and label==head_col+1:
                 fp_name = dataset.img_infos[i]['filename']
                 print("FP on %s"%fp_name, "on conf %s"%SCORE_THR)
@@ -201,12 +200,8 @@ def my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold):
         # compute false positives and true positives
         false_positives = np.cumsum(false_positives)
         true_positives  = np.cumsum(true_positives)
-        #Print on head col TP/FP
-        if len(false_positives)+len(true_positives)==0:
-            pass
-        else:
-            if label==head_col+1:
-                print("Classes", label, "Using CONF:", SCORE_THR, 'iou:', iou_threshold, "TP/FP:",true_positives[-1], false_positives[-1])
+        if label==head_col+1:
+            print("Classes", label, "Using CONF:", SCORE_THR, 'iou:', iou_threshold, "TP/FP:",true_positives[-1], false_positives[-1])
         # compute precision_single and recall_single by LMW
         if len(true_positives)==0:
             precision_single = 0
@@ -240,15 +235,12 @@ def my_csv_eval(outputs, dataset, SCORE_THR, iou_threshold):
     #print("Precising:", precisions, "\nRecalling:", average_precisions, "\nF1_at_this_conf:", f1_scores, np.array(list(f1_scores.values())).sum())
     return np.array(list(f1_scores.values())), np.array(list(precisions.values())), np.array(list(recalls.values()))
 
-def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLDS, show=False):
-    #print("Using confidence scores:", CONFIDENCE_THRESHOLDS)
+def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLD, show=False):
+    #print("Using confidence score:", CONFIDENCE_THRESHOLD)
     model.eval()
     start = time.time()
     result = inference_detector(model, _data)
     elapsed_time = time.time()-start
-    #Seperate CONFIDENCE_THRESHOLDS control:
-    for i in range(len(result)):
-        result[i] = result[i][result[i][:,-1]>CONFIDENCE_THRESHOLDS[i]]
     labels = np.concatenate([
                            np.full(bbox.shape[0], i, dtype=np.int32)
                           for i, bbox in enumerate(result)])
@@ -262,6 +254,8 @@ def single_gpu_frame_detection(model, _data, CONFIDENCE_THRESHOLDS, show=False):
     label_names = []
     for label,bbox in zip(labels,bboxes):
         threshold = bbox[-1]
+        if threshold < CONFIDENCE_THRESHOLD:
+            continue
         x1,y1 = bbox[0],bbox[1]
         x2,y2 = bbox[2],bbox[1]
         x3,y3 = bbox[2],bbox[3]
@@ -280,16 +274,17 @@ def single_gpu_test(model, data_loader, SCORE_THR, show=False):
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
-        #sys.stdout.flush()
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
         if show:
             print("\nTesting on %s"%data_loader.dataset.img_prefix+data_loader.dataset.img_infos[i]['filename'])
             if SCORE_THR is not None:
-                model.module.show_result(data, result, dataset.img_norm_cfg, score_thr=SCORE_THR)   #score_thr is here, hidden
+                #model.module.show_result(data, result, dataset.img_norm_cfg, score_thr=SCORE_THR)   #score_thr is here, hidden
+                model.module.show_result(data, result)
             else:
-                model.module.show_result(data, result, dataset.img_norm_cfg)   #score_thr is here, hidden
+                #model.module.show_result(data, result, dataset.img_norm_cfg)   #score_thr is here, hidden
+                model.module.show_result(data, result)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -412,7 +407,7 @@ def main():
 
     # build the dataloader
     # TODO: support multiple images per gpu (only minor changes are needed)
-    dataset = get_dataset(cfg.data.test)
+    dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
         imgs_per_gpu=1,
@@ -446,14 +441,14 @@ def main():
             if eval_types == ['proposal_fast']:
                 result_file = args.out
                 #coco_eval(result_file, eval_types, dataset.coco)
-                coco_eval_substitude(outputs, dataset, args.show)
+                coco_eval_substitude(outputs, dataset)
             else:
                 if not isinstance(outputs[0], dict):
                     #car_face走着里::::::::::::::::::::::::
                     result_file = args.out + '.json'
                     #results2json(dataset, outputs, result_file)
                     #coco_eval(result_file, eval_types, dataset.coco)
-                    coco_eval_substitude(outputs, dataset, args.show)
+                    coco_eval_substitude(outputs, dataset)
                 else:
                     for name in outputs[0]:
                         print('\nEvaluating {}'.format(name))
@@ -464,7 +459,7 @@ def main():
                         result_file = args.out + '.{}.json'.format(name)
                         #results2json(dataset, outputs_, result_file)
                         #coco_eval(result_file, eval_types, dataset.coco)
-                        coco_eval_substitude(outputs, dataset, args.show)
+                        coco_eval_substitude(outputs, dataset)
 
 
 if __name__ == '__main__':
