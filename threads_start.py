@@ -188,7 +188,7 @@ def algorithm_detection_and_merge(workers, \
     num_backleft = max(num7, num8)
     num9 = len(np.where(np.array(pos9)!=0)[0])
     num10 = len(np.where(np.array(pos10)!=0)[0])
-    num_backright = max(num7, num8)
+    num_backright = max(num9, num10)
     predictions_merged = predictions_merged + [num_backleft] + [num_backright]
     print("predictions_merged", predictions_merged)
 

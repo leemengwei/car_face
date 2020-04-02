@@ -53,7 +53,10 @@ class A(camera):
         self.net_spatial_param = load('%s/%s'%(self.root_dir, config.SPATIAL_IN_SEAT_MODEL))
         self.net_spatial.load_state_dict(self.net_spatial_param['model_state_dict'])
         #Cascade net 载入结构:
-        self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_CONFIG, MMD_WEIGHTS)
+        if not 'back' in self.side:
+            self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_FRONT_CONFIG, MMD_FRONT_WEIGHTS)
+        else:   #side is back
+            self.net_to_detect_objs = self.get_mmd_model_and_template(MMD_BACK_CONFIG, MMD_BACK_WEIGHTS)
         #On gpu:
         self.net_spatial.cuda().eval()
         self.net_to_detect_objs.cuda().eval()
