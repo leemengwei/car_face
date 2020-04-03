@@ -194,8 +194,9 @@ test_cfg = dict(
         min_bbox_size=0),
     rcnn=dict(
         score_thr=0.05,
-        nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05),
-        max_per_img=100),
+        #nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05),
+        nms=dict(type='nms', iou_thr=0.4),
+        max_per_img=10),
     #bbox_vote=dict(enable=True, vote_th=0.9),
     keep_all_stages=False)
 # dataset settings

@@ -38,9 +38,9 @@ UNVEIL               = True
 
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
 #CLASSES: angle top head
-FRONT_CONFIDENCE_THRESHOLDS = [0.3, 0.3, 0.95]
+FRONT_CONFIDENCE_THRESHOLDS = [0.3, 0.3, 0.90]
 #FRONT_CONFIDENCE_THRESHOLDS = [0.95, 0.95, 0.95]
-BACK_CONFIDENCE_THRESHOLDS = [1.0, 1.0, 0.95]
+BACK_CONFIDENCE_THRESHOLDS = [1.0, 1.0, 0.90]
 #BACK_CONFIDENCE_THRESHOLDS = [0.95, 0.95, 0.95]
 #定位模型
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_pos/model_best_old12345.pt"   
@@ -54,9 +54,9 @@ MMD_FRONT_WEIGHTS = "./mmdetection/work_dirs/epoch_8_front_FP11000.pth"
 MMD_BACK_CONFIG = "./mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_back.py"
 MMD_BACK_WEIGHTS = "./mmdetection/work_dirs/epoch_8_back_FP351.pth"
 
-BACK_HEAD_TOO_SMALL = 50 #40
-BACK_HEAD_TOO_BIG = 75 #40
-HEAD_TOO_SMALL = 60  #45
+BACK_HEAD_TOO_SMALL = 3200 #~=57 #50 #40
+BACK_HEAD_TOO_BIG = 999 #40
+HEAD_TOO_SMALL = 5000 #~=70  #60  #45
 TOP_TOO_SMALL = 52
 ANGLE_TOO_SMALL = 53
 WINDOW_WIDTH = 650*0.85
@@ -72,7 +72,7 @@ else:
 ##################Options for Seat merge:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
-VOTE_THRESHOLD = 2  #where >= count
+VOTE_THRESHOLD = 1  #where >= count
 CAR_TO_CAR_DIR = "/home/user/experiments/"
 #CAR_TO_CAR_DIR = "./units_experiments/"
 

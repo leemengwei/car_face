@@ -72,13 +72,15 @@ class A(camera):
         model = init_detector(_mmd_config, _mmd_weights)
         return model
     def drop_small_heads(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores):
+        #Drop if too small:
         head_heights = heads_y2s-heads_y1s 
         head_widths = heads_x2s-heads_x1s
         if 'back' in self.side:
-            where_too_small = (head_heights<config.BACK_HEAD_TOO_SMALL)|(head_widths<config.BACK_HEAD_TOO_SMALL)   #for back, neither side too small is wrong
-        else:
-            where_too_small = (head_heights<config.HEAD_TOO_SMALL)&(head_widths<config.HEAD_TOO_SMALL)    #for front, we can accept one side small scenario
-        #Drop if too small:
+            where_too_small = head_heights*head_widths<config.BACK_HEAD_TOO_SMALL   #for back, neither side too small is wrong
+            #where_too_small = (head_heights<config.BACK_HEAD_TOO_SMALL)|(head_widths<config.BACK_HEAD_TOO_SMALL)   #for back, neither side too small is wrong
+        else:   #front too smal
+            where_too_small = head_heights*head_widths<config.HEAD_TOO_SMALL    #for front, we can accept one side small scenario
+            #where_too_small = (head_heights<config.HEAD_TOO_SMALL)&(head_widths<config.HEAD_TOO_SMALL)    #for front, we can accept one side small scenario
         heads_x1s = heads_x1s[~where_too_small]
         heads_x2s = heads_x2s[~where_too_small]
         heads_y1s = heads_y1s[~where_too_small]
@@ -86,6 +88,20 @@ class A(camera):
         heads_scores = heads_scores[~where_too_small]
         if len(np.where(where_too_small==True)[0])>=1:
             print("There are %s small head dropped..."%len(np.where(where_too_small==True)))
+        #Drop if too big:
+        #head_heights = heads_y2s-heads_y1s 
+        #head_widths = heads_x2s-heads_x1s
+        #if 'back' in self.side:
+        #    where_too_big = (head_heights>config.BACK_HEAD_TOO_BIG)|(head_widths>config.BACK_HEAD_TOO_BIG)   #for back, neither side too big is wrong
+        #else:
+        #    where_too_big = (head_heights>999)|(head_widths>999)   #temporary no limit for front side
+        #heads_x1s = heads_x1s[~where_too_big]
+        #heads_x2s = heads_x2s[~where_too_big]
+        #heads_y1s = heads_y1s[~where_too_big]
+        #heads_y2s = heads_y2s[~where_too_big]
+        #heads_scores = heads_scores[~where_too_big]
+        #if len(np.where(where_too_big==True)[0])>=1:
+        #    print("There are %s big head dropped..."%len(np.where(where_too_big==True)))
         return heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores
     def get_objs_position(self, net_cam_frame, CONFIDENCE_THRESHOLDS):
         classes = config.CLASSES_4
@@ -419,9 +435,9 @@ class A(camera):
             pass
         #前侧则：
         if self.side == "left" or self.side =="right":
+            #对人头的经验审查与修补：
+            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores) 
             if frame_status == "ok":    #识别或补充到两个标识物才是ok
-                #对人头的经验审查与修补：
-                heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores) 
                 #位置判别：
                 positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
                 #暂时忽略5位置
