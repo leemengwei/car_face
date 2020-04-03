@@ -112,7 +112,7 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
             if len(set(car_result_vote)) == len(car_result_label):
                 number_score_by_vote += 1
             print("PbyU:", position_score_by_union, "PbyV:", position_score_by_vote, "NbyU:", number_score_by_union, "NbyV:", number_score_by_vote, "All:", all_num)
-        #input()
+        input()
         plt.close()
         plt.close()
         plt.close()

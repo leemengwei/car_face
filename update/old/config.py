@@ -38,24 +38,17 @@ UNVEIL               = True
 
 _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说明是晚上
 #CLASSES: angle top head
-FRONT_CONFIDENCE_THRESHOLDS = [0.3, 0.3, 0.95]
-#FRONT_CONFIDENCE_THRESHOLDS = [0.95, 0.95, 0.95]
-BACK_CONFIDENCE_THRESHOLDS = [1.0, 1.0, 0.95]
-#BACK_CONFIDENCE_THRESHOLDS = [0.95, 0.95, 0.95]
+FRONT_CONFIDENCE_THRESHOLDS = [0.5, 0.5, 0.5]
+BACK_CONFIDENCE_THRESHOLDS = [0.6, 0.6, 0.6]
 #定位模型
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_pos/model_best_old12345.pt"   
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_adjust/model_best.pt"   
 SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_but_for_1234/model_best_for_1234.pt"   
 #检测模型
-#FRONT:
-MMD_FRONT_CONFIG = "./mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py"
-MMD_FRONT_WEIGHTS = "./mmdetection/work_dirs/epoch_8_front_FP11000.pth"
-#BACK:
-MMD_BACK_CONFIG = "./mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_back.py"
-MMD_BACK_WEIGHTS = "./mmdetection/work_dirs/epoch_8_back_FP351.pth"
+MMD_CONFIG = "mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_more_neg.py"
+MMD_WEIGHTS = "object_detection_logs_data_both_side_finetunes/hrnet_epoch_7_head944_conf049.pth"
 
 BACK_HEAD_TOO_SMALL = 50 #40
-BACK_HEAD_TOO_BIG = 75 #40
 HEAD_TOO_SMALL = 60  #45
 TOP_TOO_SMALL = 52
 ANGLE_TOO_SMALL = 53
@@ -73,8 +66,8 @@ else:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 2  #where >= count
-CAR_TO_CAR_DIR = "/home/user/experiments/"
-#CAR_TO_CAR_DIR = "./units_experiments/"
+#CAR_TO_CAR_DIR = "/home/user/experiments/"
+CAR_TO_CAR_DIR = "./units_experiments/"
 
 IGNORE_5 = True
 IGNORE_5 = False
