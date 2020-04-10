@@ -24,7 +24,7 @@ import spatial_in_seat_train_and_test
 import time
 import skimage.io
 import glob
-plt.ion()
+#plt.ion()
 import collections
 import warnings
 warnings.filterwarnings("ignore")
@@ -241,6 +241,7 @@ class A(camera):
                 top_x2 = top_x1+100
                 top_y2 = top_y1-100
                 top_score = np.array([0]).reshape(-1,1)
+                frame_status = "Fixed"
             elif (len(angle_score)==0 and len(top_score)==1):
                 #angle_x1 = top_x1-685.0948918547668
                 #angle_y1 = top_y1+125.42961902952528
@@ -251,6 +252,7 @@ class A(camera):
                 angle_x2 = angle_x1-100
                 angle_y2 = angle_y1+100
                 angle_score = np.array([0]).reshape(-1,1)
+                frame_status = "Fixed"
             elif (len(angle_score)==0 and len(top_score)==0):   #对于两个标识物一个都没有的情况，则状态变为无框帧
                 frame_status = "NoRefs"
             else:   #或者都刚好有一个的情况,
@@ -269,6 +271,7 @@ class A(camera):
                 top_x2 = top_x1-100
                 top_y2 = top_y1-100
                 top_score = np.array([0]).reshape(-1,1)
+                frame_status = "Fixed"
             elif (len(angle_score)==0 and len(top_score)==1):
                 #angle_x1 = top_x1+579.6467673760624
                 #angle_y1 = top_y1+98.41134448029959
@@ -280,6 +283,7 @@ class A(camera):
                 angle_y2 = angle_y1+100
                 #data.loc[right]['ref1_y2'].mean()-data.loc[right]['ref2_y2'].mean()
                 angle_score = np.array([0]).reshape(-1,1)
+                frame_status = "Fixed"
             elif (len(angle_score)==0 and len(top_score)==0):  #对于两个标识物一个都没有的情况，则状态变为无框帧
                 frame_status = "NoRefs"
             else:   #或者都刚好有一个的情况,
@@ -336,7 +340,9 @@ class A(camera):
             #生成输入矩阵 n×12维度， n是人头个数
             if "back" in self.side:
                 #仅以区分前后映射空间的不同
-                inputs_tmp = np.tile(np.array([-angle_x1, -angle_y1, -angle_x2, -angle_y2, -top_x1, -top_y1, -top_x2, -top_y2]).reshape(-1), (len(heads_x1s),1))
+                #inputs_tmp = np.tile(np.array([-angle_x1, -angle_y1, -angle_x2, -angle_y2, -top_x1, -top_y1, -top_x2, -top_y2]).reshape(-1), (len(heads_x1s),1))
+                print("Should not be here")
+                sys.exit()
             else:
                 inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
             positions_peer_side = {}
@@ -350,6 +356,14 @@ class A(camera):
                     position_probabilities_list.append(position_probabilities)
                     position_list.append(position)
             pos_raw = list(np.argmax(position_probabilities_list, axis=1)+1)
+            #spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 4
+            if self.side is 'right' and 2 in pos_raw:
+                check_at = np.where(np.array(pos_raw)==2)[0]
+                criterion = (np.abs(heads_x1s-heads_x2s)/2)[check_at].min()
+                for check_this in check_at:
+                    if min(heads_x1s[check_this], heads_x2s[check_this])-max(top_x1,top_x2)>criterion:
+                        print("A right 2 is Toofaraway!!! Current alter to 4")
+                        pos_raw[check_this] = 4
             status = "Predicted"
             counter = np.array([pos_raw.count(i+1) for i in range(config.NUM_OF_SEATS_PEER_CAR)])
             #print(counter)
@@ -392,13 +406,13 @@ class A(camera):
                         pos_raw += [4]
                         print("a 5 as 4")
                 else:    # self.side is 'backleft or backright':
-                    if where_multi==1:pass
-                    if where_multi==2:pass
-                    if where_multi==3:pass
-                    if where_multi==4:pass
-                    if where_multi==5:pass
-            if 5 in pos_raw:
-                pos_raw = pos_raw+[3]+[4]
+                    #if where_multi==1:pass
+                    #if where_multi==2:pass
+                    #if where_multi==3:pass
+                    #if where_multi==4:pass
+                    #if where_multi==5:pass
+                    print("Shouldn't be here")
+                    sys.exit()
             pos_taken = list(set(pos_raw+[1]))
             #print(pos_taken)
             _result_ = list(pos_taken)
@@ -435,18 +449,18 @@ class A(camera):
             pass
         #前侧则：
         if self.side == "left" or self.side =="right":
-            #对人头的经验审查与修补：
-            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores) 
             if frame_status == "ok":    #识别或补充到两个标识物才是ok
+                #对人头的经验审查与修补：
+                heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores) 
                 #位置判别：
                 positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
                 #暂时忽略5位置
                 if config.IGNORE_5:
                     positions_peer_side = self.ignore_5(positions_peer_side)
-            elif frame_status == "NoRefs":   #此时都没有车，根据左右直接猜
-                status = "Direct Guess (%s)"%self.side
-                positions_peer_side = [1, 2, 3, 5, 4][:min(len(heads_x1s),5)] if self.side == 'left' else [1, 2, 3, 4, 5][:min(len(heads_x1s),5)]
-                positions_peer_side = [0,] if len(positions_peer_side)==0 else positions_peer_side
+            #elif frame_status == "NoRefs":   #此时都没有车，根据左右直接猜
+            #    status = "Direct Guess (%s)"%self.side
+            #    positions_peer_side = [1, 2, 3, 5, 4][:min(len(heads_x1s),5)] if self.side == 'left' else [1, 2, 3, 4, 5][:min(len(heads_x1s),5)]
+            #    positions_peer_side = [0,] if len(positions_peer_side)==0 else positions_peer_side
             else:
                 status = "Frame Skipped since (%s)"%frame_status
                 positions_peer_side = [0,]
@@ -459,9 +473,10 @@ class A(camera):
             #后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
             status = "Direct Guess (%s)"%self.side
             if self.side == "backleft":
-                positions_peer_side = [4,4,4,4,4][:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
+                positions_peer_side = [4,5,5,5,5][:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
             else:   # self.side == "backright"
-                positions_peer_side = [3,3,3,3,3][:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
+                positions_peer_side = [3,5,5,5,5][:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
+            positions_peer_side = [3,4,5] if 5 in positions_peer_side else positions_peer_side
             positions_peer_side = [0] if len(positions_peer_side)==0 else positions_peer_side
         time_used = time.time() - start_time
         print("Localization(%s-%s):"%(self.side, self.time_num), status, "***", positions_peer_side, "***")
@@ -517,8 +532,8 @@ class A(camera):
                 view_name = self.root_dir+'/views/0.png'
             if os.path.exists(view_name):
                 ax3.imshow(plt.imread(view_name))
-            plt.draw()
-            plt.pause(0.001)
+            #plt.draw()
+            #plt.pause(0.001)
             #input()
             #plt.close()
         return [positions_peer_side, plt]

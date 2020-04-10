@@ -58,17 +58,18 @@ def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, 
         for i in range(1, config.NUM_OF_SEATS_PEER_CAR+1):
             seat_count[i-1] = preds_front.count(i)
         front = set(np.where(seat_count>=config.VOTE_THRESHOLD)[0]+1)
-        #Add up back 3 or 4
+        #Add up back 3 or 4 or 5
         back = set(pos7 + pos8 + pos9 +pos10) - {1} - {2}
         predictions_merged = front.union(back)
         predictions_merged = predictions_merged - {0}
-        if (len(predictions_merged)-len(front))>=2:
-            print("Warning, back adding:", back)
         #Pos 2 bug save:
-        if len(predictions_merged)==5:   #If have 5 person already,
-            if 2 not in set(pos1+pos2+pos3):    #and in left side we dont see pos2
-                predictions_merged = predictions_merged-{2}
-                print("Pos2drop by bug fix")
+        #if len(predictions_merged)=5:
+        #    if 2 not in set(pos1+pos2+pos3):    #and in left side we dont see pos2
+        #        predictions_merged = set(list(predictions_merged-{2})+[4])   #then other 2 from right side must be 4
+        #        print("Pos2drop by bug fix")
+        if 5 in predictions_merged:  #If has 5
+            if 3 in predictions_merged or 4 in predictions_merged: #and has 3 or 4, then add full back
+                predictions_merged = set(list(predictions_merged) + [3,4])
     else:
         print("Wrong method given. [union, vote, front_and_back]")
         sys.exit()

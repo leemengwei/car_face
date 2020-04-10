@@ -41,48 +41,69 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         #LEFTS:
         preds = []
         if config.VISUALIZATION:
-            plt.figure()
+            #plt.figure()
+            pass
         A_image_data = camera.get_image_data(images_left[0])
         pos1, A_plt = A_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_1.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_left[1])
         pos2, A_plt = A_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
+
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_2.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_left[2])
         pos3, A_plt = A_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
+
         #RIGHTS:
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_3.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_right[0])
         pos4, A_plt = B_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
+
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_4.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_right[1])
         pos5, A_plt = B_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
+        
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_5.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_right[2])
         pos6, A_plt = B_program.self_logic(A_image_data, config.FRONT_CONFIDENCE_THRESHOLDS)
+        
         #BACKSleft:
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_6.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_back[0])
         pos7, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
+
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_7.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_back[1])
         pos8, A_plt = C_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
+
         #BACKSright:
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_8.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_back[2])
         pos9, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
+
         if config.VISUALIZATION:
-            plt.figure()
+            A_plt.savefig(car+"/detection_9.jpg")
+            #plt.figure()
         A_image_data = camera.get_image_data(images_back[3])
         pos10, A_plt = D_program.self_logic(A_image_data, config.BACK_CONFIDENCE_THRESHOLDS)
+
+        if config.VISUALIZATION:
+            A_plt.savefig(car+"/detection_10.jpg")
 
         car_result_union = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method = "union")
         car_result_vote = seat_merge.seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, method = "vote")
@@ -93,7 +114,6 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
             f.write("front and back:%s\n"%car_result_front_and_back)
             f.write("backleft:%s\n"%(pos7+pos8))
             f.write("backright:%s\n"%(pos9+pos10))
-
 
         car_result_label = list(set(np.array(os.popen("cat %s/*.json|grep head|grep label|cut -c 21|sort|uniq"%car.replace(' ','\ ')).read().split()).astype(int)))
         print("Label this car:", car_result_label)
@@ -112,7 +132,10 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
             if len(set(car_result_vote)) == len(car_result_label):
                 number_score_by_vote += 1
             print("PbyU:", position_score_by_union, "PbyV:", position_score_by_vote, "NbyU:", number_score_by_union, "NbyV:", number_score_by_vote, "All:", all_num)
-        input()
+        #input()
+        #embed()
+        plt.close()
+        plt.close()
         plt.close()
         plt.close()
         plt.close()
