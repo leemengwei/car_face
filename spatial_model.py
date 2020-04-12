@@ -23,7 +23,7 @@ class NeuralNet(nn.Module):
         out = self.fc1(x)
         for i in range(self.hidden_depth):
             out = self.fcns[i](out)
-            #out = self.bns[i](out)
+        #    #out = self.bns[i](out)
             out = self.relu(out)
         out = self.fc2(out)
         out = self.relu(out)

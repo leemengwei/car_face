@@ -49,26 +49,26 @@ SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_but_for_1234/mode
 #检测模型
 #FRONT:
 MMD_FRONT_CONFIG = "./mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4.py"
-MMD_FRONT_WEIGHTS = "./mmdetection/work_dirs/epoch_8_front_FP11000.pth"
+MMD_FRONT_WEIGHTS = "./mmdetection/work_dirs/epoch_20_front_FP6612.pth"
 #BACK:
 MMD_BACK_CONFIG = "./mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_back.py"
 MMD_BACK_WEIGHTS = "./mmdetection/work_dirs/epoch_8_back_FP351.pth"
 
-BACK_HEAD_TOO_SMALL = 2500 #3200 #~=57 #50 #40
+BACK_HEAD_TOO_SMALL = 2000 #3200 #~=57 #50 #40
 BACK_HEAD_TOO_BIG = 99999999 #40
-HEAD_TOO_SMALL = 1800 #5000 #~=70  #60  #45
+HEAD_TOO_SMALL = 1400 #5000 #~=70  #60  #45
 TOP_TOO_SMALL = 35
 ANGLE_TOO_SMALL = 35
 WINDOW_WIDTH = 650*0.85
 WINDOW_HEIGHT = 200*0.85
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-PARALLEL_MODE = True
+#PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:
     VISUALIZATION = True
-VISUALIZATION = False
+#VISUALIZATION = False   #set False when only want to check txt or debug
 
 ##################Options for Seat merge:
 NUM_OF_SEATS_PEER_CAR = 5

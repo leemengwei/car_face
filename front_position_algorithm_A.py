@@ -1,10 +1,3 @@
-'''
-class A():
-    def __init__(self, tmp):
-        pass
-    pass
-
-'''
 import copy
 import numpy as np
 #import argparse
@@ -142,29 +135,6 @@ class A(camera):
                heads_x2s, heads_y2s, \
                heads_scores, heads_names
 
-    def get_refs_for_back(self):
-        #will obselete in next version
-        try:
-            angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 =list(np.loadtxt("./history_refs_%s"%self.side.strip("back")))
-            angle_x1 = np.array([angle_x1])
-            angle_y1 = np.array([angle_y1])
-            angle_x2 = np.array([angle_x2])
-            angle_y2 = np.array([angle_y2])
-            top_x1 = np.array([top_x1])
-            top_y1 = np.array([top_y1])
-            top_x2 = np.array([top_x2])
-            top_y2 = np.array([top_y2])
-        except:
-            angle_x1 = np.array([])
-            angle_y1 = np.array([])
-            angle_x2 = np.array([])
-            angle_y2 = np.array([])
-            top_x1 = np.array([])
-            top_y1 = np.array([])
-            top_x2 = np.array([])
-            top_y2 = np.array([])
-        return angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2
-
     def check_refs_outputs(self, refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names):
         frame_status = "ok"
         #这里考虑单侧的相机，无论是否看到了另一侧的angle或top，都不管，只处理本侧的angle和top
@@ -292,19 +262,13 @@ class A(camera):
                 else:
                     pass
         else:  #self.side is "backleft or backright"
-           #will obselete in next version
-           #本帧图像给出的top和angle都可直接舍弃（就不该有）
-           #读取文件内容得到磁盘记录的标识物位置，并注意，在后续定位时给出足以区分前后相机不同定位空间的值（如取负操作等）：
-           angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2 = self.get_refs_for_back()
-           #判断历史的一些信息：取首个帧，故长度不会超过1
-           if len(angle_x1)==1 and len(top_x1)==1:
-               pass
-           else:
-               frame_status = "BackRefsBadStatus"
+           frame_status = "ThisIsBackSide"
+           pass
         return angle_x1, angle_y1, angle_x2, angle_y2, \
                top_x1, top_y1, top_x2, top_y2, \
                angle_score, top_score, angle_name, top_name, frame_status
-    def check_heads_outputs(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores):
+
+    def check_heads_outputs_front(self, heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores):
         #Judge if head big enough
         heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores)
         #Drop if outside:
@@ -314,10 +278,11 @@ class A(camera):
         top_yc = ((top_y1+top_y2)/2).reshape(-1)
         heads_x_center = (heads_x1s+heads_x2s)/2
         heads_y_center = (heads_y1s+heads_y2s)/2
+        top_width = abs(top_x1-top_x2)
         if self.side is "left":
-            left_right_within = heads_x_center>angle_xc
+            left_right_within = (heads_x_center>angle_xc)&(heads_x_center<top_xc+2*top_width)
         elif self.side is "right":
-            left_right_within = heads_x_center<angle_xc
+            left_right_within = (heads_x_center<angle_xc)&(heads_x_center>top_x2-2*top_width)
         else:   #side is back
             print("This check function should not be called in backside")
             sys.exit()
@@ -343,7 +308,7 @@ class A(camera):
                 #inputs_tmp = np.tile(np.array([-angle_x1, -angle_y1, -angle_x2, -angle_y2, -top_x1, -top_y1, -top_x2, -top_y2]).reshape(-1), (len(heads_x1s),1))
                 print("Should not be here")
                 sys.exit()
-            else:
+            else:  #fronts
                 inputs_tmp = np.tile(np.array([angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2]).reshape(-1), (len(heads_x1s),1))
             positions_peer_side = {}
             position_probabilities_list = []
@@ -356,14 +321,19 @@ class A(camera):
                     position_probabilities_list.append(position_probabilities)
                     position_list.append(position)
             pos_raw = list(np.argmax(position_probabilities_list, axis=1)+1)
-            #spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 4
+
+            #Two spetial treats for loc error:
+            #1) right front只看到单4的情况，几乎不可能发生，但又可能因为司机后仰而导致location错误，故这种情况4修正为1
+            if self.side is 'right' and pos_raw == [4]:
+                pos_raw == [1]
+            #2) spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 5 标准：绝大多数贴着，给一个最小2号的宽度冗余：
             if self.side is 'right' and 2 in pos_raw:
                 check_at = np.where(np.array(pos_raw)==2)[0]
                 criterion = (np.abs(heads_x1s-heads_x2s)/2)[check_at].min()
                 for check_this in check_at:
                     if min(heads_x1s[check_this], heads_x2s[check_this])-max(top_x1,top_x2)>criterion:
-                        print("A right 2 is Toofaraway!!! Current alter to 4")
-                        pos_raw[check_this] = 4
+                        print("A right 2 is Toofaraway!!! Current alter to 5")
+                        pos_raw[check_this] = 5
             status = "Predicted"
             counter = np.array([pos_raw.count(i+1) for i in range(config.NUM_OF_SEATS_PEER_CAR)])
             #print(counter)
@@ -413,6 +383,9 @@ class A(camera):
                     #if where_multi==5:pass
                     print("Shouldn't be here")
                     sys.exit()
+            #帧内：对前侧相机来说只有单张图上看到35或45才算345
+            if (3 in pos_raw and 5 in pos_raw) or (4 in pos_raw and 5 in pos_raw):
+                pos_raw = pos_raw+[3,4,5]
             pos_taken = list(set(pos_raw+[1]))
             #print(pos_taken)
             _result_ = list(pos_taken)
@@ -427,6 +400,30 @@ class A(camera):
         except:
             pass
         return positions_peer_side
+
+    def check_heads_outputs_back(self, image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores):
+        image_shape = image_data.shape
+        _old_len = len(heads_scores)
+        heads_center_x = (heads_x1s+heads_x2s)/2
+        if self.side == 'backleft':
+            validate_line = image_shape[1]*(3/5)
+            keeps = np.where(heads_center_x<validate_line)
+        elif self.side == 'backright':
+            validate_line = image_shape[1]*(2/5)
+            keeps = np.where(heads_center_x>validate_line)
+        else:
+            print("Should not be here!")
+            sys.exit()
+        heads_x1s = heads_x1s[keeps]
+        heads_x2s = heads_x2s[keeps]
+        heads_y1s = heads_y1s[keeps]
+        heads_y2s = heads_y2s[keeps]
+        heads_scores = heads_scores[keeps]
+        heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores)
+        if len(keeps[0])<_old_len:
+            print("Back report: heads are droped due to small or position!")
+        return heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores
+
     def self_logic(self, image_data, CONFIDENCE_THRESHOLDS):
         if image_data.dtype == np.uint8:   #If come from C
             #print("Must be C running...")
@@ -442,34 +439,22 @@ class A(camera):
         refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores, heads_names = self.get_objs_position(net_cam_frame, CONFIDENCE_THRESHOLDS)
         #对标识物的经验审查与修补：
         angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, angle_score, top_score, angle_name, top_name, frame_status = self.check_refs_outputs(refs_x1s, refs_y1s, refs_x2s, refs_y2s, refs_scores, refs_label_names)
-        if self.time_num == 1 and 'back' not in self.side:    #Will obselete in next version:
-            #refs_info = np.array([list(angle_x1), list(angle_y1), list(angle_x2), list(angle_y2), list(top_x1), list(top_y1), list(top_x2), list(top_y2)])
-            #np.savetxt("./history_refs_%s"%self.side, refs_info.reshape(-1))   #首帧refs将会在每次threads调用时清除
-            #print("history refs saved")
-            pass
         #前侧则：
         if self.side == "left" or self.side =="right":
             if frame_status == "ok":    #识别或补充到两个标识物才是ok
                 #对人头的经验审查与修补：
-                heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores) 
+                heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs_front(heads_x1s, heads_y1s, heads_x2s, heads_y2s, angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_scores) 
                 #位置判别：
                 positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
                 #暂时忽略5位置
                 if config.IGNORE_5:
                     positions_peer_side = self.ignore_5(positions_peer_side)
-            #elif frame_status == "NoRefs":   #此时都没有车，根据左右直接猜
-            #    status = "Direct Guess (%s)"%self.side
-            #    positions_peer_side = [1, 2, 3, 5, 4][:min(len(heads_x1s),5)] if self.side == 'left' else [1, 2, 3, 4, 5][:min(len(heads_x1s),5)]
-            #    positions_peer_side = [0,] if len(positions_peer_side)==0 else positions_peer_side
             else:
                 status = "Frame Skipped since (%s)"%frame_status
                 positions_peer_side = [0,]
         #是后侧
         else:
-            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores)
-            #if frame_status == "ok":  #定位后侧，必须要求从文件读到了两个参考点
-            #    positions_peer_side, status = self.get_spatial_in_seat_position(angle_x1, angle_y1, angle_x2, angle_y2, top_x1, top_y1, top_x2, top_y2, heads_x1s, heads_y1s, heads_x2s, heads_y2s)
-            #else:
+            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs_back(image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores) 
             #后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
             status = "Direct Guess (%s)"%self.side
             if self.side == "backleft":

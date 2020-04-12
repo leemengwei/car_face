@@ -4,7 +4,6 @@ import threading
 import time,os,sys
 import glob
 import front_position_algorithm_A as A
-#import side_position_algorithm_B as B  #will depracate in next version
 from camera import camera
 import seat_merge
 from IPython import embed
@@ -143,8 +142,6 @@ def algorithm_detection_and_merge(workers, \
 
         #print("Fronts finished, now back...")
         #sys.exit()
-        #后侧进程需要用首帧的结果, 所以一定要确定前6帧完成
-        #不用了， will obselete in next version...
 
         _thread1.join()
         _thread2.join()

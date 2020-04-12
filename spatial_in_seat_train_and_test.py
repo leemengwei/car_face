@@ -44,6 +44,7 @@ def train(model, train_loader, optimizer, epoch):
         optimizer.step()
         LOSS += loss.item() # pile up all loss
         pbar.set_description('Train Epoch: {}, datapiece:[{}/{} ({:.0f}%)]. Loss: {:.8f}'.format(epoch, batch_idx*len(data), len(train_loader.dataset), 100.*batch_idx/len(train_loader), loss.item()))
+    #embed()
     train_loss_mean = LOSS/len(train_loader.dataset)
     print("Train Epoch: {} LOSS:{:.1f}, Average loss: {:.8f}".format(epoch, LOSS, train_loss_mean))
     return train_loss_mean
@@ -79,11 +80,11 @@ if __name__=="__main__":
     parser.add_argument('-SM', '--save_model', action="store_true", default=False)
     parser.add_argument('-RM', '--restart_model', type=str, default = None)
     parser.add_argument('-C', '--cuda_number', type=int, default = 0)
-    parser.add_argument('-HD', '--hidden_depth', type=int, default = 3)
-    parser.add_argument('-HW', '--hidden_width', type=int, default = 100)
+    parser.add_argument('-HD', '--hidden_depth', type=int, default = 0)
+    parser.add_argument('-HW', '--hidden_width', type=int, default = 300)
     parser.add_argument('-EX', '--expander', type=int, default=1)
-    parser.add_argument('-LR', '--learning_rate', type=float, default=1e-4)
-    parser.add_argument('-E', '--epochs', type=int, default=100)
+    parser.add_argument('-LR', '--learning_rate', type=float, default=0.2)
+    parser.add_argument('-E', '--epochs', type=int, default=24)
     parser.add_argument('-TR', '--test_ratio', type=float, default = 0.2)
     parser.add_argument('-BS', '--batch_size', type=int, default=100)
     parser.add_argument('-DP', '--data_path', type=str, required=True)
@@ -108,7 +109,7 @@ if __name__=="__main__":
         whole_dataset = torch.utils.data.TensorDataset(inputs, targets)
         train_dataset, validate_dataset = torch.utils.data.random_split(whole_dataset, (len(whole_dataset)-int(len(whole_dataset)*args.test_ratio),int(len(whole_dataset)*args.test_ratio)))
         train_loader = torch.utils.data.DataLoader( 
-                dataset=train_dataset, 
+                dataset=validate_dataset, 
                 batch_size=args.batch_size,
                 shuffle=True,
                 drop_last=True,
@@ -121,7 +122,7 @@ if __name__=="__main__":
                 batch_size=args.batch_size,
                 shuffle=False,
                 drop_last=True,
-    	        num_workers=4,
+    	          num_workers=4,
                 pin_memory=True
                 )
         assert (len(train_loader)!=0 and len(validate_loader)!=0), "Either of length of train/val loader is zero, reset batch_size to a proper value"
@@ -167,8 +168,8 @@ if __name__=="__main__":
 
     #TRAIN and Validate----------------------------------------------------------------------------------
     for epoch in range(epoch, args.epochs + 1):  # loop over the dataset multiple times
-        train_loss = train(model, train_loader, optimizer, epoch)
         validate_loss, last_output, last_label = validate(model, validate_loader)
+        train_loss = train(model, train_loader, optimizer, epoch)
         train_loss_history.append(train_loss)
         validate_loss_history.append(validate_loss)
         train_loss_history[0] = validate_loss_history[0]
@@ -186,7 +187,7 @@ if __name__=="__main__":
             torch.save(ckpt, modeldir)
         else:
             print("Not saving middle-process model... pass")
-        if epoch>1:
+        if epoch>20:
             if validate_loss_history[-1] < np.array(validate_loss_history[:-1]).min():
                 print("-------------------------------Best model, epoch: %s-----------------------------"%epoch)
                 torch.save(ckpt, model_best_path)

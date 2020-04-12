@@ -20,3 +20,9 @@ shanghai as val is now very strict, CAN NEVER USED AS TRAIN!!!
 shanghai cleaned, and as val
 mannual_val is empty, all as mannual train, and cleaned.
 
+
+2020.04.10
+pillow nature SUP & original cover SUP:
+1. for images with no object, run generate_empty_xml.py to get xmls.
+2. run clean_no_gt_pngs_and_cover_gt_and_generate_empty_xml_to_suppress_fp.py YOURDIR_WITH_PNGS_AND_XMLS, will first move out pngs without xml, and read all other pngs and xmls: COVER their bbox, and output a tmp/ dir with all COVERED_images and empty COVERED_xmls.
+3. Move all pngs and xmls together, generate coco, and run with latest mmd version.

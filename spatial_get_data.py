@@ -8,7 +8,7 @@ from IPython import embed
 import json
 from glob import glob
 import matplotlib.pyplot as plt
-
+import tqdm
 with_name = False
 #with_name = True
 
@@ -86,7 +86,7 @@ def generate_for_no_folder_images(json_list, head_names, ref_names):
         return data
     paths = []
     inputs = np.empty(shape=(0, int(4*2+4+1)))   # ref_pos + head_pos + head_label
-    for files in json_list:
+    for files in tqdm.tqdm(json_list):
         #within one image:
         with open(files) as f:
             data = json.load(f)
@@ -103,17 +103,18 @@ def generate_for_no_folder_images(json_list, head_names, ref_names):
             elif i['label'] in ref_names:
                 num_of_refs += 1
             else:
-                print("Unkown type %s"%i['label'])
+                #print("Unkown type %s"%i['label'])
                 if i['label']=='head6':
                     sys.exit()
         if num_of_refs != 2:
-            print("In file %s, Findding %s refs! Supposing two and only two!"%(files, num_of_refs))
+            #print("In file %s, Findding %s refs! Supposing two and only two!"%(files, num_of_refs))
             continue
         elif num_of_heads < 1:
-            print("In file %s, Findding %s heads! Supposing at least one head(dirver)!"%(files, num_of_heads))
+            #print("In file %s, Findding %s heads! Supposing at least one head(dirver)!"%(files, num_of_heads))
             continue
         else:
-            print("In file %s, Findding %s heads and %s refs, a good sample"%(files, num_of_heads, num_of_refs))
+            #print("In file %s, Findding %s heads and %s refs, a good sample"%(files, num_of_heads, num_of_refs))
+            pass
         #开始形成数据：
         ref_positions = np.array([])
         for ref_name in ref_names:

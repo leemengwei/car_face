@@ -58,18 +58,13 @@ def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, 
         for i in range(1, config.NUM_OF_SEATS_PEER_CAR+1):
             seat_count[i-1] = preds_front.count(i)
         front = set(np.where(seat_count>=config.VOTE_THRESHOLD)[0]+1)
-        #Add up back 3 or 4 or 5
+        #Add up back 
         back = set(pos7 + pos8 + pos9 +pos10) - {1} - {2}
         predictions_merged = front.union(back)
         predictions_merged = predictions_merged - {0}
-        #Pos 2 bug save:
-        #if len(predictions_merged)=5:
-        #    if 2 not in set(pos1+pos2+pos3):    #and in left side we dont see pos2
-        #        predictions_merged = set(list(predictions_merged-{2})+[4])   #then other 2 from right side must be 4
-        #        print("Pos2drop by bug fix")
-        if 5 in predictions_merged:  #If has 5
-            if 3 in predictions_merged or 4 in predictions_merged: #and has 3 or 4, then add full back
-                predictions_merged = set(list(predictions_merged) + [3,4])
+        #最终汇总时没2号，则把后排修改为34两人
+        if 2 not in predictions_merged:
+            predictions_merged = predictions_merged-{5}
     else:
         print("Wrong method given. [union, vote, front_and_back]")
         sys.exit()
@@ -79,63 +74,3 @@ def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, 
     print("Merge:", predictions_merged, method, "back pos given:", (pos7+pos8), (pos9+pos10))
     return predictions_merged
 
-#class Thread_A(threading.Thread):
-#    def run(self):
-#        filelist = glob.glob("/home/user/left/*.jpg")
-#        for idx, filename in enumerate(filelist):
-#            A_image_data = camera.get_image_data(filename)
-#            A_pos = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
-#            print(idx, A_pos)
-#
-#class Thread_B(threading.Thread):
-#    def run(self):
-#        filelist = glob.glob("/home/user/right/*.jpg")
-#        for idx, filename in enumerate(filelist):
-#            B_image_data = camera.get_image_data(filename)
-#            B_pos = B_program.self_logic(B_image_data, CONFIDENCE_THRESHOLD)
-#            print(idx, B_pos)
-
-#if __name__ == "__main__":
-#
-#    #Initialization:
-#    #A:
-#    print("Initializing front camera A...")
-#    root_dir = os.getcwd()
-#    A_program = A.A(root_dir)
-#    #B:
-#    print("Initializing front camera B...")
-#    B_program = B.B(root_dir)
-#    #创建线程
-#    #thread_A = Thread_A()
-#    #thread_B = Thread_B()
-#    #开启线程
-#    #thread_A.start()
-#    #thread_B.start()
-#
-#    A_filelist = glob.glob("./left/*.jpg")
-#    B_filelist = glob.glob("./right/*.jpg")
-#    for idx, (A_filename, B_filename) in enumerate(zip(A_filelist[:], B_filelist[:])):
-#        #A side:
-#        plt.figure()
-#        A_image_data = camera.get_image_data(A_filename)
-#        A_pos, A_plt = A_program.self_logic(A_image_data, CONFIDENCE_THRESHOLD)
-#        #B side:
-#        plt.figure()
-#        B_image_data = camera.get_image_data(B_filename)
-#        B_pos, B_plt = B_program.self_logic(B_image_data, CONFIDENCE_THRESHOLD)
-#        #Both side:
-#        plt.figure()
-#        positions_peer_car = seat_merge_all(A_pos+B_pos) 
-#        seats = np.zeros(shape=(1,5))
-#        if len(positions_peer_car)>0:
-#            seats[0, np.array(positions_peer_car)-1] = 1
-#        sns.heatmap(seats, linewidths=0.1, vmin=0, vmax=1, cmap='Blues', square=True, linecolor='white', annot=True, xticklabels=['1','2','3','4','5'])
-#        plt.title("Number of person this car: %s"%seats.sum())
-#        plt.pause(0.01)
-#
-#        input()
-#        plt.close()
-#        plt.close()
-#        plt.close()
-#        print(idx, A_pos, B_pos)
-#        sys.exit()
