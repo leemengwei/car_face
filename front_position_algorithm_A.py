@@ -276,13 +276,13 @@ class A(camera):
         angle_yc = ((angle_y1+angle_y2)/2).reshape(-1)
         top_xc = ((top_x1+top_x2)/2).reshape(-1)
         top_yc = ((top_y1+top_y2)/2).reshape(-1)
-        heads_x_center = (heads_x1s+heads_x2s)/2
-        heads_y_center = (heads_y1s+heads_y2s)/2
-        top_width = abs(top_x1-top_x2)
+        heads_x_center = ((heads_x1s+heads_x2s)/2).reshape(-1)
+        heads_y_center = ((heads_y1s+heads_y2s)/2).reshape(-1)
+        top_width = abs(top_x1-top_x2).reshape(-1)
         if self.side is "left":
             left_right_within = (heads_x_center>angle_xc)&(heads_x_center<top_xc+2*top_width)
         elif self.side is "right":
-            left_right_within = (heads_x_center<angle_xc)&(heads_x_center>top_x2-2*top_width)
+            left_right_within = (heads_x_center<angle_xc)&(heads_x_center>top_xc-2*top_width)
         else:   #side is back
             print("This check function should not be called in backside")
             sys.exit()
@@ -326,14 +326,14 @@ class A(camera):
             #1) right front只看到单4的情况，几乎不可能发生，但又可能因为司机后仰而导致location错误，故这种情况4修正为1
             if self.side is 'right' and pos_raw == [4]:
                 pos_raw == [1]
-            #2) spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 5 标准：绝大多数贴着，给一个最小2号的宽度冗余：
+            #2) spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 4 标准：绝大多数贴着，给一个最小2号的宽度冗余：
             if self.side is 'right' and 2 in pos_raw:
                 check_at = np.where(np.array(pos_raw)==2)[0]
                 criterion = (np.abs(heads_x1s-heads_x2s)/2)[check_at].min()
                 for check_this in check_at:
                     if min(heads_x1s[check_this], heads_x2s[check_this])-max(top_x1,top_x2)>criterion:
-                        print("A right 2 is Toofaraway!!! Current alter to 5")
-                        pos_raw[check_this] = 5
+                        print("A right 2 is Toofaraway!!! Current alter to 4")
+                        pos_raw[check_this] = 4
             status = "Predicted"
             counter = np.array([pos_raw.count(i+1) for i in range(config.NUM_OF_SEATS_PEER_CAR)])
             #print(counter)
@@ -404,7 +404,7 @@ class A(camera):
     def check_heads_outputs_back(self, image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores):
         image_shape = image_data.shape
         _old_len = len(heads_scores)
-        heads_center_x = (heads_x1s+heads_x2s)/2
+        heads_center_x = ((heads_x1s+heads_x2s)/2).reshape(-1)
         if self.side == 'backleft':
             validate_line = image_shape[1]*(3/5)
             keeps = np.where(heads_center_x<validate_line)
@@ -419,9 +419,9 @@ class A(camera):
         heads_y1s = heads_y1s[keeps]
         heads_y2s = heads_y2s[keeps]
         heads_scores = heads_scores[keeps]
-        heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores)
         if len(keeps[0])<_old_len:
-            print("Back report: heads are droped due to small or position!")
+            print("Back report: heads are droped due to region position!")
+        heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.drop_small_heads(heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores)
         return heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores
 
     def self_logic(self, image_data, CONFIDENCE_THRESHOLDS):

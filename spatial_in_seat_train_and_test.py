@@ -80,10 +80,10 @@ if __name__=="__main__":
     parser.add_argument('-SM', '--save_model', action="store_true", default=False)
     parser.add_argument('-RM', '--restart_model', type=str, default = None)
     parser.add_argument('-C', '--cuda_number', type=int, default = 0)
-    parser.add_argument('-HD', '--hidden_depth', type=int, default = 0)
-    parser.add_argument('-HW', '--hidden_width', type=int, default = 300)
+    parser.add_argument('-HD', '--hidden_depth', type=int, default = 3)
+    parser.add_argument('-HW', '--hidden_width', type=int, default = 100)
     parser.add_argument('-EX', '--expander', type=int, default=1)
-    parser.add_argument('-LR', '--learning_rate', type=float, default=0.2)
+    parser.add_argument('-LR', '--learning_rate', type=float, default=1e-4)
     parser.add_argument('-E', '--epochs', type=int, default=24)
     parser.add_argument('-TR', '--test_ratio', type=float, default = 0.2)
     parser.add_argument('-BS', '--batch_size', type=int, default=100)
@@ -109,7 +109,7 @@ if __name__=="__main__":
         whole_dataset = torch.utils.data.TensorDataset(inputs, targets)
         train_dataset, validate_dataset = torch.utils.data.random_split(whole_dataset, (len(whole_dataset)-int(len(whole_dataset)*args.test_ratio),int(len(whole_dataset)*args.test_ratio)))
         train_loader = torch.utils.data.DataLoader( 
-                dataset=validate_dataset, 
+                dataset=train_dataset, 
                 batch_size=args.batch_size,
                 shuffle=True,
                 drop_last=True,
