@@ -55,16 +55,16 @@ MMD_FRONT_WEIGHTS = "./mmdetection/work_dirs/epoch_18_front_FP4332.pth"
 MMD_BACK_CONFIG = "./mmdetection/configs/car_face/cascade_rcnn_hrnetv2p_w32_20e_4_back.py"
 MMD_BACK_WEIGHTS = "./mmdetection/work_dirs/epoch_8_back_FP351.pth"
 
-BACK_HEAD_TOO_SMALL = 0 #3200 #~=57 #50 #40
+BACK_HEAD_TOO_SMALL = 1500 #3200 #~=57 #50 #40
 BACK_HEAD_TOO_BIG = 99999999 #40
-HEAD_TOO_SMALL = 0 #5000 #~=70  #60  #45
+HEAD_TOO_SMALL = 1500 #5000 #~=70  #60  #45
 TOP_TOO_SMALL = 35
 ANGLE_TOO_SMALL = 35
 WINDOW_WIDTH = 650*0.85
 WINDOW_HEIGHT = 200*0.85
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
-PARALLEL_MODE = True
+#PARALLEL_MODE = True
 if PARALLEL_MODE:
     VISUALIZATION = False
 else:
@@ -75,7 +75,7 @@ else:
 NUM_OF_SEATS_PEER_CAR = 5
 MERGE_METHOD = "vote"
 VOTE_THRESHOLD = 1  #where >= count
-CAR_TO_CAR_DIR = "./units_experiments/5人/"
+CAR_TO_CAR_DIR = "./units_experiments/3人/"
 #CAR_TO_CAR_DIR = "./units_experiments/"
 
 IGNORE_5 = True

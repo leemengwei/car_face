@@ -187,7 +187,7 @@ if __name__=="__main__":
             torch.save(ckpt, modeldir)
         else:
             print("Not saving middle-process model... pass")
-        if epoch>20:
+        if epoch>5:
             if validate_loss_history[-1] < np.array(validate_loss_history[:-1]).min():
                 print("-------------------------------Best model, epoch: %s-----------------------------"%epoch)
                 torch.save(ckpt, model_best_path)

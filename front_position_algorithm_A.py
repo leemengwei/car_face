@@ -280,9 +280,9 @@ class A(camera):
         heads_y_center = ((heads_y1s+heads_y2s)/2).reshape(-1)
         top_width = abs(top_x1-top_x2).reshape(-1)
         if self.side is "left":
-            left_right_within = (heads_x_center>angle_xc)&(heads_x_center<top_xc+2*top_width)
+            left_right_within = (heads_x_center>angle_xc)&(heads_x_center<top_xc+0.6*top_width)
         elif self.side is "right":
-            left_right_within = (heads_x_center<angle_xc)&(heads_x_center>top_xc-2*top_width)
+            left_right_within = (heads_x_center<angle_xc)&(heads_x_center>top_xc-0.6*top_width)
         else:   #side is back
             print("This check function should not be called in backside")
             sys.exit()
