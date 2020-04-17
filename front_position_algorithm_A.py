@@ -322,18 +322,18 @@ class A(camera):
                     position_list.append(position)
             pos_raw = list(np.argmax(position_probabilities_list, axis=1)+1)
 
-            #Two spetial treats for loc error:
+            #Two special treats for loc error:
             #1) right front只看到单4的情况，几乎不可能发生，但又可能因为司机后仰而导致location错误，故这种情况4修正为1
             if self.side is 'right' and pos_raw == [4]:
                 pos_raw == [1]
-            #2) spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 4 标准：绝大多数贴着，给一个最小2号的宽度冗余：
+            #2) spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 5 标准：绝大多数贴着，给一个最小2号的宽度冗余：
             if self.side is 'right' and 2 in pos_raw:
                 check_at = np.where(np.array(pos_raw)==2)[0]
                 criterion = (np.abs(heads_x1s-heads_x2s)/2)[check_at].min()
                 for check_this in check_at:
                     if min(heads_x1s[check_this], heads_x2s[check_this])-max(top_x1,top_x2)>criterion:
-                        print("A right 2 is Toofaraway!!! Current alter to 4")
-                        pos_raw[check_this] = 4
+                        print("A right 2 is Toofaraway!!! Current alter to 5")
+                        pos_raw[check_this] = 5
             status = "Predicted"
             counter = np.array([pos_raw.count(i+1) for i in range(config.NUM_OF_SEATS_PEER_CAR)])
             #print(counter)
@@ -401,16 +401,21 @@ class A(camera):
             pass
         return positions_peer_side
 
-    def check_heads_outputs_back(self, image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores):
+    def check_heads_outputs_back(self, image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, top_x1, top_y1, top_x2, top_y2, heads_scores):
         image_shape = image_data.shape
         _old_len = len(heads_scores)
         heads_center_x = ((heads_x1s+heads_x2s)/2).reshape(-1)
+        center_top_x = ((top_x1+top_x2)/2).reshape(-1)
         if self.side == 'backleft':
             validate_line = image_shape[1]*(3/5)
             keeps = np.where(heads_center_x<validate_line)
+            if len(center_top_x)>0:
+                keeps = np.where(heads_center_x>center_top_x.min())
         elif self.side == 'backright':
             validate_line = image_shape[1]*(2/5)
             keeps = np.where(heads_center_x>validate_line)
+            if len(center_top_x)>0:
+                keeps = np.where(heads_center_x<center_top_x.max())
         else:
             print("Should not be here!")
             sys.exit()
@@ -454,7 +459,7 @@ class A(camera):
                 positions_peer_side = [0,]
         #是后侧
         else:
-            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs_back(image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores) 
+            heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs_back(image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, top_x1, top_y1, top_x2, top_y2, heads_scores) 
             #后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
             status = "Direct Guess (%s)"%self.side
             if self.side == "backleft":
