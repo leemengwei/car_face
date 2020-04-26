@@ -155,9 +155,9 @@ def car_merge(cars, A_program, B_program, C_program, D_program):
         print("Prohaps too few to print")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = "Double side...")
-    args = parser.parse_args()
-     
+    car_to_car_dir = config.CAR_TO_CAR_DIR
+    cars = glob.glob(car_to_car_dir+sys.argv[1]+"/*")
+    
     print("Using front confidence:%s"%config.FRONT_CONFIDENCE_THRESHOLDS)
     print("Using back confidence:%s"%config.BACK_CONFIDENCE_THRESHOLDS)
     #Initialization:
@@ -175,7 +175,5 @@ if __name__ == "__main__":
     print("Initializing front camera D...")
     D_program = A.A(root_dir, "backright")
 
-    car_to_car_dir = config.CAR_TO_CAR_DIR
-    cars = glob.glob(car_to_car_dir+"/*")
     car_merge(cars, A_program, B_program, C_program, D_program)
 

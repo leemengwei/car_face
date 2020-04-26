@@ -65,6 +65,11 @@ def seat_merge_all(pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8, pos9, pos10, 
         #最终汇总时没2号，and 3,4,5 all in back, 则把后排修改为34两人
         if 2 not in predictions_merged and 3 in predictions_merged and 4 in predictions_merged and 5 in predictions_merged:
             predictions_merged = predictions_merged-{5}
+        if (4 in predictions_merged and 5 in predictions_merged) or (3 in predictions_merged and 5 in predictions_merged):
+            predictions_merged = predictions_merged.union({3,4,5})
+        #最终汇总时, Kou 5: if 5 not in fronts, then kou.
+        #if 5 not in front:
+        #    predictions_merged = predictions_merged-{5}
     else:
         print("Wrong method given. [union, vote, front_and_back]")
         sys.exit()
