@@ -321,19 +321,65 @@ class A(camera):
                     position_probabilities_list.append(position_probabilities)
                     position_list.append(position)
             pos_raw = list(np.argmax(position_probabilities_list, axis=1)+1)
-
-            #Two special treats for loc error:
+            #Several special treats for loc error:
+            #sp 0) left NO 4->1, right NO 3->2, but first to adjust obvious to 4,3
+            heads_center_x = ((heads_x1s+heads_x2s)/2).reshape(-1)
+            heads_width = np.abs(heads_x1s-heads_x2s).reshape(-1)
+            top_center_x = ((top_x1+top_x2)/2).reshape(-1)
+            if self.side is 'left':
+                if len(np.where(heads_center_x>top_center_x)[0])>0:
+                    pos_raw[np.where(heads_center_x>top_center_x)[0][0]] = 4
+                if 4 in pos_raw and len(top_center_x)==1:
+                    if float(heads_center_x[pos_raw.index(4)])<float(top_center_x):
+                        print("Correcting obvious left 4 to 1")
+                        pos_raw[pos_raw.index(4)] = 1
+            if self.side is 'right':
+                if len(np.where(heads_center_x<top_center_x)[0])>0:
+                    pos_raw[np.where(heads_center_x<top_center_x)[0][0]] = 3
+                if 3 in pos_raw and len(top_center_x)==1:
+                    if float(heads_center_x[pos_raw.index(3)])>float(top_center_x):
+                        print("Correcting right 3 to 2")
+                        pos_raw[pos_raw.index(3)] = 2
+            #sp 0-1) left for 3 that overlaps 1 ->5, same as right     #04-27
+            if self.side is 'left' and pos_raw.count(3)==1 and 1 in pos_raw:
+                if max(heads_x1s[pos_raw.index(3)],heads_x2s[pos_raw.index(3)])>min(heads_x1s[pos_raw.index(1)],heads_x2s[pos_raw.index(1)]):
+                    print("A 3 to close to 1, ->5")
+                    pos_raw[pos_raw.index(3)] = 5
+            if self.side is 'right' and pos_raw.count(4)==1 and 2 in pos_raw:
+                if min(heads_x1s[pos_raw.index(4)],heads_x2s[pos_raw.index(4)])<max(heads_x1s[pos_raw.index(2)],heads_x2s[pos_raw.index(2)]):
+                    print("A 4 to close to 2, ->5")
+                    pos_raw[pos_raw.index(4)] = 5
             #1) right front只看到单4的情况，几乎不可能发生，但又可能因为司机后仰而导致location错误，故这种情况4修正为1
-            if self.side is 'right' and pos_raw == [4]:
-                pos_raw == [1]
+            if self.side is 'right':
+                if pos_raw == [4]:
+                    pos_raw = [1]
+                if pos_raw == [4,4]:
+                    pos_raw = [1,4]
             #2) spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 5 标准：绝大多数贴着，给一个最小2号的宽度冗余：
             if self.side is 'right' and 2 in pos_raw:
-                check_at = np.where(np.array(pos_raw)==2)[0]
-                criterion = (np.abs(heads_x1s-heads_x2s)/2)[check_at].min()
-                for check_this in check_at:
-                    if min(heads_x1s[check_this], heads_x2s[check_this])-max(top_x1,top_x2)>criterion:
-                        print("A right 2 is Toofaraway!!! Current alter to 5")
-                        pos_raw[check_this] = 5
+                if pos_raw.count(2)==1:       #modified 04-26
+                    check_at = np.where(np.array(pos_raw)==2)[0]
+                    criterion = (np.abs(heads_x1s-heads_x2s)/2)[check_at].min()
+                    for check_this in check_at:
+                        if min(heads_x1s[check_this], heads_x2s[check_this])-max(top_x1,top_x2)>criterion:
+                            width_this = np.abs(heads_x1s[check_this]-heads_x2s[check_this]).min()
+                            if pos_raw.count(1)>0 and max(heads_x1s[check_this], heads_x2s[check_this])+1.1*width_this>min(heads_x1s[np.where(np.array(pos_raw)==1)],heads_x2s[np.where(np.array(pos_raw)==1)]):
+                                print("A right 2 is Toofaraway! but close to 1, Current alter to 4")   #It depends:
+                                pos_raw[check_this] = 4
+                            else:
+                                print("A right 2 is Toofaraway!!! Current alter to 5")   #It depends:
+                                pos_raw[check_this] = 5
+            #sp 3) from left, if multi back seats but no 2, then must be a 2 and a back
+            if self.side is 'left' and 2 not in pos_raw:
+                if pos_raw.count(3)==2:
+                    pos_raw = [1,2,3]
+                if pos_raw.count(3)==3:
+                    pos_raw = [1,2,3,3]
+            #sp 4) from right, if multi back seats but no 1, then must be a 1 and a back
+            if self.side is 'right' and 1 not in pos_raw:
+                if pos_raw.count(4)>=1:
+                    pos_raw.remove(4)  #very likely to be 1
+                    pos_raw+=[1]
             status = "Predicted"
             counter = np.array([pos_raw.count(i+1) for i in range(config.NUM_OF_SEATS_PEER_CAR)])
             #print(counter)
@@ -345,47 +391,68 @@ class A(camera):
                 status = "Modified"
                 #all else:
                 if self.side is "left":
-                    if where_multi==1:
-                        #print("multi1ok")    #multi No1 is okay
-                        print("left multi1 as 5")    #multi No1 is okay
-                        pos_raw += [5]
-                    if where_multi==2:        #multi No2 at left is actually 3
+                    if where_multi==1:  #It depends!
+                        ones_at = np.where(np.array(pos_raw)==1)
+                        if heads_width[ones_at].sum()+config.SLIT-10*self.time_num<np.array([heads_x1s[ones_at],heads_x2s[ones_at]]).max()-np.array([heads_x1s[ones_at],heads_x2s[ones_at]]).min():  #when not Overlap (there's a slit between)
+                            pos_raw += [config.LEFT_FILL]
+                            print("left multi1, not overlaps 1, as %s"%config.LEFT_FILL)    
+                        else:
+                            pos_raw += [5]
+                            print("left multi1, overlapping 1, as 5") 
+                    if where_multi==2: 
                         pos_raw += [3]
                         print("a 2 as 3")
-                    if where_multi==3:        #multi No3 at left, as 2
-                        pos_raw += [5]
-                        print("a 3 as 5")
+                    if where_multi==3:   
+                        print("multi3pass")
+                        pass
                     if where_multi==4:
-                        print("multi4ok")    #multi No4 at left must FP, pass
-                    if where_multi==5:        #multi No5 at left is actually 3
-                        pos_raw += [3]
-                        print("a 5 as 3")
-                elif self.side is "right":
+                        print("multi4pass") 
+                    if where_multi==5:   
+                        print("multi5pass")
+                else:  # self.side is "right":
                     if where_multi==1:
-                        print("right multi1as4")
+                        print("right multi1 as 4") 
                         pos_raw += [4]
-                    if where_multi==2:        #multi No2 at right is actually 5
-                        pos_raw += [5]
-                        print("a 2 as 5")
+                    if where_multi==2:  #It depends!
+                        twos_at = np.where(np.array(pos_raw)==2)
+                        if heads_width[twos_at].sum()+config.SLIT-10*self.time_num<np.array([heads_x1s[twos_at],heads_x2s[twos_at]]).max()-np.array([heads_x1s[twos_at],heads_x2s[twos_at]]).min():  #when not Overlap, far, as 4, there's a slit between
+                            pos_raw += [config.RIGHT_FILL]
+                            print("right multi2 far to 2 as %s"%config.RIGHT_FILL)    
+                        else:
+                            pos_raw += [5]
+                            print("right multi2 close to 2 as 5") 
                     if where_multi==3:
-                        print("multi3ok")       #multi No3 at right must FP, pass
+                        print("multi3pass") 
                     if where_multi==4:
-                        pos_raw += [5]   #multi No4 at right is actually 5
-                        print("a 4 as 5")
-                    if where_multi==5:        #multi No5 at right, as 2
-                        pos_raw += [4]
-                        print("a 5 as 4")
-                else:    # self.side is 'backleft or backright':
-                    #if where_multi==1:pass
-                    #if where_multi==2:pass
-                    #if where_multi==3:pass
-                    #if where_multi==4:pass
-                    #if where_multi==5:pass
-                    print("Shouldn't be here")
-                    sys.exit()
-            #帧内：对前侧相机来说只有单张图上看到35或45才算345
-            if (3 in pos_raw and 5 in pos_raw) or (4 in pos_raw and 5 in pos_raw):
-                pos_raw = pos_raw+[3,4,5]
+                        print("multi4pass")
+                        pass
+                    if where_multi==5:  
+                        print("multi5pass")
+            #帧内：对前侧相机来说只有单张图上看到33或44才算345
+            #Consider: if right no 1, then 4 must be 1, if left multi 3 and no 2, then must be 2.
+            #if (3 in pos_raw and 5 in pos_raw) or (4 in pos_raw and 5 in pos_raw):
+            if self.side is "left":
+                if pos_raw.count(3)==2:
+                    if 2 not in pos_raw:
+                        pos_raw.remove(3)
+                        pos_raw += [2]
+                    else:
+                        pos_raw = pos_raw+[3,4,5]
+                elif 3 in pos_raw and 5 in pos_raw:
+                    pos_raw += [3,4,5]
+                else:
+                    pass
+            else:   #side is right
+                if pos_raw.count(4)==2:
+                    if 1 not in pos_raw:
+                        pos_raw.remove(4)
+                        pos_raw += [1]
+                    else:
+                        pos_raw = pos_raw+[3,4,5]
+                elif 4 in pos_raw and 5 in pos_raw:
+                    pos_raw += [3,4,5]
+                else:
+                    pass
             pos_taken = list(set(pos_raw+[1]))
             #print(pos_taken)
             _result_ = list(pos_taken)
@@ -407,12 +474,12 @@ class A(camera):
         heads_center_x = ((heads_x1s+heads_x2s)/2).reshape(-1)
         center_top_x = ((top_x1+top_x2)/2).reshape(-1)
         if self.side == 'backleft':
-            validate_line = image_shape[1]*(3/5)
+            validate_line = image_shape[1]*(3/5) #*99
             keeps = np.where(heads_center_x<validate_line)
             if len(center_top_x)>0:
                 keeps = np.where(heads_center_x>center_top_x.min())
         elif self.side == 'backright':
-            validate_line = image_shape[1]*(2/5)
+            validate_line = image_shape[1]*(2/5)  #*0
             keeps = np.where(heads_center_x>validate_line)
             if len(center_top_x)>0:
                 keeps = np.where(heads_center_x<center_top_x.max())
@@ -462,10 +529,31 @@ class A(camera):
             heads_x1s, heads_y1s, heads_x2s, heads_y2s, heads_scores = self.check_heads_outputs_back(image_data, heads_x1s, heads_y1s, heads_x2s, heads_y2s, top_x1, top_y1, top_x2, top_y2, heads_scores) 
             #后侧直接猜，不使用任何定位网络，也不在乎 frame_status。
             status = "Direct Guess (%s)"%self.side
+            heads_center_x = ((heads_x1s+heads_x2s)/2).reshape(-1)
+            top_center_x = ((top_x1+top_x2)/2).reshape(-1)
+            heads_width = np.abs(heads_x1s-heads_x2s).reshape(-1)
             if self.side == "backleft":
-                positions_peer_side = [4,5,5,5,5][:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
+                positions_peer_side = config.BACKLEFTGUESS[:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
             else:   # self.side == "backright"
-                positions_peer_side = [3,5,5,5,5][:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
+                positions_peer_side = config.BACKRIGHTGUESS[:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
+            #LOOK Through Correction:
+            #if len(heads_center_x)==2:
+            #    if abs(heads_center_x[0] - heads_center_x[-1])>1.0*heads_width.min():
+            #        print("Warning, two heads far away, might look through, drop one")
+            #        positions_peer_side.remove(5)
+            if len(heads_center_x)==1 and len(top_center_x)==1:
+                if self.side == 'backleft':
+                    #more strict
+                    #if heads_center_x[0]<max(top_x1[0], top_x2[0]):
+                    if min(heads_x1s, heads_x2s)<max(top_x1[0], top_x2[0]):
+                        print("Warning, too close to corner, might look through, drop")
+                        positions_peer_side.remove(4)
+                if self.side == 'backright':
+                    #if heads_center_x[0]>min(top_x1[0], top_x2[0]):
+                    #more strict
+                    if max(heads_x1s, heads_x2s)>min(top_x1[0], top_x2[0]):
+                        print("Warning, too close to corner, might look through, drop")
+                        positions_peer_side.remove(3)
             positions_peer_side = [3,4,5] if 5 in positions_peer_side else positions_peer_side
             positions_peer_side = [0] if len(positions_peer_side)==0 else positions_peer_side
         time_used = time.time() - start_time
