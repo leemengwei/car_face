@@ -40,7 +40,7 @@ _LIGHT_THRESHOLD = 20  #光线曝光时间阈值，实际值大于阈值则说�
 #CLASSES: angle top head
 FRONT_CONFIDENCE_THRESHOLDS = [0.3, 0.3, 0.86]
 #FRONT_CONFIDENCE_THRESHOLDS = [0.95, 0.95, 0.95]
-BACK_CONFIDENCE_THRESHOLDS = [1.0, 0.95, 0.89]
+BACK_CONFIDENCE_THRESHOLDS = [1.0, 0.95, 0.86]
 #BACK_CONFIDENCE_THRESHOLDS = [0.95, 0.95, 0.95]
 #定位模型
 #SPATIAL_IN_SEAT_MODEL = "spatial_model_both_side_danger_full_5_pos/model_best_old12345.pt"   
