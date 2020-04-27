@@ -340,6 +340,15 @@ class A(camera):
                     if float(heads_center_x[pos_raw.index(3)])>float(top_center_x):
                         print("Correcting right 3 to 2")
                         pos_raw[pos_raw.index(3)] = 2
+            #sp 0-1) left for 3 that overlaps 1 ->5, same as right     #04-27
+            if self.side is 'left' and pos_raw.count(3)==1 and 1 in pos_raw:
+                if max(heads_x1s[pos_raw.index(3)],heads_x2s[pos_raw.index(3)])>min(heads_x1s[pos_raw.index(1)],heads_x2s[pos_raw.index(1)]):
+                    print("A 3 to close to 1, ->5")
+                    pos_raw[pos_raw.index(3)] = 5
+            if self.side is 'right' and pos_raw.count(4)==1 and 2 in pos_raw:
+                if min(heads_x1s[pos_raw.index(4)],heads_x2s[pos_raw.index(4)])<max(heads_x1s[pos_raw.index(2)],heads_x2s[pos_raw.index(2)]):
+                    print("A 4 to close to 2, ->5")
+                    pos_raw[pos_raw.index(4)] = 5
             #1) right front只看到单4的情况，几乎不可能发生，但又可能因为司机后仰而导致location错误，故这种情况4修正为1
             if self.side is 'right':
                 if pos_raw == [4]:
@@ -348,7 +357,7 @@ class A(camera):
                     pos_raw = [1,4]
             #2) spectial treat for right side pos 2: if pos 2 is too far away from its top, then it's 5 标准：绝大多数贴着，给一个最小2号的宽度冗余：
             if self.side is 'right' and 2 in pos_raw:
-                if pos_raw.count(2)>=1:
+                if pos_raw.count(2)==1:       #modified 04-26
                     check_at = np.where(np.array(pos_raw)==2)[0]
                     criterion = (np.abs(heads_x1s-heads_x2s)/2)[check_at].min()
                     for check_this in check_at:
@@ -384,12 +393,12 @@ class A(camera):
                 if self.side is "left":
                     if where_multi==1:  #It depends!
                         ones_at = np.where(np.array(pos_raw)==1)
-                        if heads_width[ones_at].sum()+config.SLIT<np.array([heads_x1s[ones_at],heads_x2s[ones_at]]).max()-np.array([heads_x1s[ones_at],heads_x2s[ones_at]]).min():  #when not Overlap (there's a slit between)
+                        if heads_width[ones_at].sum()+config.SLIT-10*self.time_num<np.array([heads_x1s[ones_at],heads_x2s[ones_at]]).max()-np.array([heads_x1s[ones_at],heads_x2s[ones_at]]).min():  #when not Overlap (there's a slit between)
                             pos_raw += [config.LEFT_FILL]
-                            print("left multi1 as %s"%config.LEFT_FILL)    
+                            print("left multi1, not overlaps 1, as %s"%config.LEFT_FILL)    
                         else:
                             pos_raw += [5]
-                            print("left multi1 as 5") 
+                            print("left multi1, overlapping 1, as 5") 
                     if where_multi==2: 
                         pos_raw += [3]
                         print("a 2 as 3")
@@ -406,7 +415,7 @@ class A(camera):
                         pos_raw += [4]
                     if where_multi==2:  #It depends!
                         twos_at = np.where(np.array(pos_raw)==2)
-                        if heads_width[twos_at].sum()+config.SLIT<np.array([heads_x1s[twos_at],heads_x2s[twos_at]]).max()-np.array([heads_x1s[twos_at],heads_x2s[twos_at]]).min():  #when not Overlap, far as 4, there's a slit between
+                        if heads_width[twos_at].sum()+config.SLIT-10*self.time_num<np.array([heads_x1s[twos_at],heads_x2s[twos_at]]).max()-np.array([heads_x1s[twos_at],heads_x2s[twos_at]]).min():  #when not Overlap, far, as 4, there's a slit between
                             pos_raw += [config.RIGHT_FILL]
                             print("right multi2 far to 2 as %s"%config.RIGHT_FILL)    
                         else:
@@ -524,9 +533,9 @@ class A(camera):
             top_center_x = ((top_x1+top_x2)/2).reshape(-1)
             heads_width = np.abs(heads_x1s-heads_x2s).reshape(-1)
             if self.side == "backleft":
-                positions_peer_side = [4,5,5,5,5][:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
+                positions_peer_side = config.BACKLEFTGUESS[:min(len(heads_x1s),5)]  #[1, 4, 5, 3, 2][:min(len(heads_x1s),5)]
             else:   # self.side == "backright"
-                positions_peer_side = [3,5,5,5,5][:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
+                positions_peer_side = config.BACKRIGHTGUESS[:min(len(heads_x1s),5)] #[2, 3, 5, 4, 1][:min(len(heads_x1s),5)]
             #LOOK Through Correction:
             #if len(heads_center_x)==2:
             #    if abs(heads_center_x[0] - heads_center_x[-1])>1.0*heads_width.min():

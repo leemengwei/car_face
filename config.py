@@ -66,6 +66,12 @@ WINDOW_HEIGHT = 200*0.85
 LEFT_FILL = 3 #for left multi1
 RIGHT_FILL = 4  #for right multi2
 SLIT = 20   #to judge if too far
+
+#BACKLEFTGUESS = [4,3,5,5,5]
+BACKLEFTGUESS = [4,5,5,5,5]
+#BACKRIGHTGUESS = [3,4,5,5,5]
+BACKRIGHTGUESS = [3,5,5,5,5]
+
 #################Options for threads_start:
 PARALLEL_MODE = False    #单线程的threads_starts会有bug！只会调用左侧的 测试的话 请注意！  单 car_to_car_merge应该不受影响
 #PARALLEL_MODE = True
