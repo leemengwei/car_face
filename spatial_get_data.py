@@ -107,13 +107,13 @@ def generate_for_no_folder_images(json_list, head_names, ref_names):
                 if i['label']=='head6':
                     sys.exit()
         if num_of_refs != 2:
-            #print("In file %s, Findding %s refs! Supposing two and only two!"%(files, num_of_refs))
+            print("In file %s, Findding %s refs! Supposing two and only two!"%(files, num_of_refs))
             continue
         elif num_of_heads < 1:
-            #print("In file %s, Findding %s heads! Supposing at least one head(dirver)!"%(files, num_of_heads))
+            print("In file %s, Findding %s heads! Supposing at least one head(dirver)!"%(files, num_of_heads))
             continue
         else:
-            #print("In file %s, Findding %s heads and %s refs, a good sample"%(files, num_of_heads, num_of_refs))
+            print("In file %s, Findding %s heads and %s refs, a good sample"%(files, num_of_heads, num_of_refs))
             pass
         #开始形成数据：
         ref_positions = np.array([])
@@ -252,7 +252,7 @@ def get_ref_and_heads(data_path, args):
     print("Generating data for no folder image...")
     time.sleep(0.5)
     inputs, paths = generate_for_no_folder_images(no_folder_json_list, head_names, ref_names)
-
+    
     #print("Generating data for eight image foler...")
     #time.sleep(0.5)
     #inputs, paths = generate_for_eight_image_folder(eight_image_json_list, head_names, ref_names)
@@ -284,7 +284,7 @@ def get_ref_and_heads(data_path, args):
     inputs = xy_order_correction(inputs, small_cols, big_cols)  #如果不是，则correct
     return inputs, paths
 
-def mannual_feature(inputs, paths, args):
+def mannual_feature(inputs, paths, args, plot=True):
     #Compute new features:
     inputs['heads_y'] = 0.5 * (inputs['heads_y2']+inputs['heads_y1'])
     inputs['heads_x'] = 0.5 * (inputs['heads_x2']+inputs['heads_x1'])
@@ -296,7 +296,7 @@ def mannual_feature(inputs, paths, args):
     inputs['x_ratio'] = (inputs['heads_y']-inputs['ref1_y'])/(inputs['ref1_x']-inputs['ref2_x'])
     #inputs = (inputs-inputs.mean())/inputs.std()
     colors = plt.cm.Paired(np.linspace(1,0,2+len(set(inputs['label']))))
-    if args.visualization:
+    if args.visualization and plot:
         for line_idx in range(len(inputs)):
             this_line = inputs.iloc[line_idx]
             if int(this_line['label']) in [1,2,3,4]:

@@ -210,8 +210,8 @@ if __name__=="__main__":
     #TEST---------------------------------------------------------------------------------------------------
     data, paths = get_data.get_ref_and_heads(args.data_path, args)
     data, paths = get_data.mannual_feature(data, paths, args)
-    inputs = torch.FloatTensor(data[input_columns].values)   #TODO dimension
     #embed()
+    inputs = torch.FloatTensor(data[input_columns].values)   #TODO dimension
     test_dataset = torch.utils.data.TensorDataset(inputs)
     test_loader = torch.utils.data.DataLoader( 
             dataset=test_dataset, 
