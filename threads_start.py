@@ -1,4 +1,6 @@
 import config
+from pycallgraph import PyCallGraph
+from pycallgraph.output import GraphvizOutput
 
 import threading
 import time,os,sys
@@ -194,7 +196,7 @@ def algorithm_detection_and_merge(workers, \
     sys.stdout.flush()
     return predictions_merged
 
-if __name__ == "__main__":
+def main():
     #初始化：
     workers = workers_cluster() 
     #input("Enter to start")
@@ -209,4 +211,11 @@ if __name__ == "__main__":
             break
         final_result = algorithm_detection_and_merge(workers, image_data1, image_data2, image_data3, image_data4, image_data5, image_data6, image_data7, image_data8, image_data9, image_data10) 
             #input()   
+
+if __name__ == "__main__":
+    graphviz = GraphvizOutput()
+    graphviz.output_file = 'basic.png'
+    
+    with PyCallGraph(output=graphviz):
+        main()
 
