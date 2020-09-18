@@ -1,0 +1,7 @@
+#pretrainedmodels==0.7.4
+#mmcv==0.2.7
+#torch==1.1.0
+#torchvision==0.2.2.post3
+#torchviz==0.0.1
+#wcwidth==0.1.7
+-e git+https://github.com/leemengwei/car_face@ff8a265b4736591a23131ffdda2b34975e2f348a#egg=mmdet&subdirectory=mmdetection
